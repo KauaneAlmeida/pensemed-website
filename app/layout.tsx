@@ -1,23 +1,42 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Open_Sans } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const openSans = Open_Sans({
+  subsets: ['latin'],
+  variable: '--font-opensans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'PenseMed - Locação de Equipamentos Médicos e OPME',
+  title: 'PenseMedical - Tecnologia Médica de Alta Complexidade',
   description:
-    'Especialistas em locação de equipamentos médicos, instrumentação cirúrgica CME e OPME. Soluções completas para hospitais, clínicas e profissionais da saúde.',
+    'PenseMedical - Tecnologia Médica de Alta Complexidade. Equipamentos de ponta para procedimentos cirúrgicos, geradores de RF, sistemas de artroscopia e mais.',
   keywords: [
-    'locação equipamentos médicos',
+    'equipamentos médicos',
+    'tecnologia médica',
+    'geradores RF',
+    'artroscopia',
     'instrumentação cirúrgica',
     'OPME',
-    'equipamentos hospitalares',
     'CME',
-    'materiais médicos',
+    'lasers lombar delight',
+    'neuroestimuladores',
   ],
+  openGraph: {
+    title: 'PenseMedical - Tecnologia Médica que Transforma Vidas',
+    description: 'Equipamentos médicos de alta complexidade para centros cirúrgicos. Geradores de RF, sistemas de artroscopia, lasers médicos e neuroestimuladores.',
+    type: 'website',
+    locale: 'pt_BR',
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className={inter.variable}>
+    <html lang="pt-BR" className={`${inter.variable} ${openSans.variable}`}>
       <body className={inter.className}>
         <div className="flex flex-col min-h-screen">
           <Navbar />

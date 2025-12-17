@@ -28,6 +28,8 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        inter: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        opensans: ['var(--font-opensans)', 'system-ui', 'sans-serif'],
       },
     },
   },
