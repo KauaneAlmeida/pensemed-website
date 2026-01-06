@@ -58,9 +58,11 @@ export default function InstrumentoDetalhes({
       }
 
       const productId = variacaoSelecionada?.id || instrumento.id;
+      const productName = variacaoSelecionada?.nome || instrumento.nome;
 
       try {
-        const { data, error } = await getProductImages(productId, nomeTabela);
+        // Passa productName para tabelas que usam produto_nome (ex: caixa_de_apoio_lombar_imagens)
+        const { data, error } = await getProductImages(productId, nomeTabela, productName);
         if (!error && data && data.length > 0) {
           setImages(data.map(img => ({
             id: img.id,
