@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getCategoriasEquipamentos } from '@/lib/api';
+import { getCategoriasEquipamentosCached } from '@/lib/api';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: revalidar a cada 10 minutos
+export const revalidate = 600;
 
 export async function GET() {
   try {
-    const categorias = await getCategoriasEquipamentos();
-    return NextResponse.json(categorias);
+    const categorias = await getCategoriasEquipamentosCached();
+    return NextResponse.json(categorias, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
+      },
+    });
   } catch (error) {
     console.error('[API /categorias-equipamentos] Erro:', error);
     return NextResponse.json([], { status: 500 });

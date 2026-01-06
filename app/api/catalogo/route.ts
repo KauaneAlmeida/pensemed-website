@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTodosProdutosCatalogo } from '@/lib/api';
 
+// Dinâmico porque usa searchParams, mas com headers de cache
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
     const caixaSlug = searchParams.get('caixa') || '';
     const ordenacao = (searchParams.get('ordenacao') as 'nome-asc' | 'nome-desc' | 'recentes') || 'nome-asc';
 
-    console.log('[API /catalogo] Parâmetros:', { pagina, porPagina, busca, categoria, caixaSlug, ordenacao });
-
     const resultado = await getTodosProdutosCatalogo({
       pagina,
       porPagina,
@@ -26,9 +24,11 @@ export async function GET(request: NextRequest) {
       ordenacao,
     });
 
-    console.log('[API /catalogo] Produtos encontrados:', resultado.total);
-
-    return NextResponse.json(resultado);
+    return NextResponse.json(resultado, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    });
   } catch (error) {
     console.error('[API /catalogo] Erro:', error);
     return NextResponse.json(

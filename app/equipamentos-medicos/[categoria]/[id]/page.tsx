@@ -8,7 +8,8 @@ import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
 import BackButton from '@/components/BackButton';
 
-export const dynamic = 'force-dynamic';
+// ISR: revalidar a cada 5 minutos
+export const revalidate = 300;
 
 interface EquipamentoDetailPageProps {
   params: {

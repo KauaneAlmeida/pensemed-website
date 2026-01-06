@@ -1,5 +1,10 @@
 import { supabase } from './supabaseClient';
 import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginados, CaixaCME, tabelaToNomeExibicao, tabelaToSlug, CategoriaEquipamento, EquipamentoMedico, EquipamentosMedicosPaginados } from './types';
+import { unstable_cache } from 'next/cache';
+import { devLog, logError, CACHE_CONFIG } from './cache';
+
+// Flag para habilitar/desabilitar logs detalhados
+const ENABLE_DETAILED_LOGS = process.env.NODE_ENV === 'development';
 
 /**
  * Verifica se um código é válido para detecção de duplicados
@@ -53,14 +58,14 @@ function removerDuplicados<T extends { nome: string; codigo?: string | null }>(i
 
     // Verificar se nome já foi visto
     if (nomeNormalizado && nomesVistos.has(nomeNormalizado)) {
-      console.log(`[removerDuplicados] DUPLICADO por nome: "${item.nome}"`);
+      if (ENABLE_DETAILED_LOGS) devLog(`[removerDuplicados] DUPLICADO por nome: "${item.nome}"`);
       duplicadosRemovidos++;
       return false;
     }
 
     // Verificar se código já foi visto (apenas para códigos alfanuméricos válidos)
     if (codigoValido && codigo && codigosVistos.has(codigo.toUpperCase())) {
-      console.log(`[removerDuplicados] DUPLICADO por código: "${codigo}" - "${item.nome}"`);
+      if (ENABLE_DETAILED_LOGS) devLog(`[removerDuplicados] DUPLICADO por código: "${codigo}" - "${item.nome}"`);
       duplicadosRemovidos++;
       return false;
     }
@@ -72,8 +77,8 @@ function removerDuplicados<T extends { nome: string; codigo?: string | null }>(i
     return true;
   });
 
-  if (duplicadosRemovidos > 0) {
-    console.log(`[removerDuplicados] Total removidos: ${duplicadosRemovidos} de ${itens.length} itens`);
+  if (duplicadosRemovidos > 0 && ENABLE_DETAILED_LOGS) {
+    devLog(`[removerDuplicados] Total removidos: ${duplicadosRemovidos} de ${itens.length} itens`);
   }
 
   return itensUnicos;
@@ -1888,7 +1893,68 @@ export async function getProdutosComImagemPrincipal(
       };
     });
   } catch (error) {
-    console.error('[getProdutosComImagemPrincipal] Erro:', error);
+    logError('[getProdutosComImagemPrincipal] Erro:', error);
     return [];
   }
+}
+
+/**
+ * ========================================
+ * VERSÕES CACHEADAS DAS FUNÇÕES PRINCIPAIS
+ * ========================================
+ * Usar estas funções nas páginas para melhor performance
+ */
+
+/**
+ * Versão cacheada de getCaixasCME
+ * Cache de 10 minutos para listagem de caixas CME
+ */
+export const getCaixasCMECached = unstable_cache(
+  async () => getCaixasCME(),
+  ['caixas-cme'],
+  { revalidate: CACHE_CONFIG.CATEGORIAS.revalidate, tags: ['caixas-cme'] }
+);
+
+/**
+ * Versão cacheada de getCategoriasEquipamentos
+ * Cache de 10 minutos para listagem de categorias de equipamentos
+ */
+export const getCategoriasEquipamentosCached = unstable_cache(
+  async () => getCategoriasEquipamentos(),
+  ['categorias-equipamentos'],
+  { revalidate: CACHE_CONFIG.CATEGORIAS.revalidate, tags: ['categorias-equipamentos'] }
+);
+
+/**
+ * Versão cacheada de getTodosProdutosCatalogo (apenas para busca sem filtros)
+ * Cache de 5 minutos para o catálogo completo
+ */
+export const getCatalogoCached = unstable_cache(
+  async () => getTodosProdutosCatalogo({ porPagina: 1000 }),
+  ['catalogo-completo'],
+  { revalidate: CACHE_CONFIG.PRODUTOS.revalidate, tags: ['catalogo'] }
+);
+
+/**
+ * Versão cacheada de getInstrumentosDaTabela
+ * Cache de 5 minutos por tabela
+ */
+export function getInstrumentosDaTabelaCached(nomeTabela: string, pagina: number = 1, porPagina: number = 20) {
+  return unstable_cache(
+    async () => getInstrumentosDaTabela(nomeTabela, pagina, porPagina),
+    [`instrumentos-${nomeTabela}-${pagina}-${porPagina}`],
+    { revalidate: CACHE_CONFIG.PRODUTOS.revalidate, tags: ['instrumentos', nomeTabela] }
+  )();
+}
+
+/**
+ * Versão cacheada de getEquipamentosDaTabela
+ * Cache de 5 minutos por tabela
+ */
+export function getEquipamentosDaTabelaCached(nomeTabela: string, pagina: number = 1, porPagina: number = 20) {
+  return unstable_cache(
+    async () => getEquipamentosDaTabela(nomeTabela, pagina, porPagina),
+    [`equipamentos-${nomeTabela}-${pagina}-${porPagina}`],
+    { revalidate: CACHE_CONFIG.PRODUTOS.revalidate, tags: ['equipamentos', nomeTabela] }
+  )();
 }

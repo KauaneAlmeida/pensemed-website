@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getInstrumentosDaTabela, getCaixasCME } from '@/lib/api';
+import { getInstrumentosDaTabelaCached, getCaixasCMECached } from '@/lib/api';
 import { InstrumentoCME } from '@/lib/types';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: revalidar a cada 5 minutos
+export const revalidate = 300;
 
 /**
  * Extrai o nome base de um instrumento para comparação
@@ -58,8 +58,8 @@ export async function GET(request: Request) {
 
   try {
     // Buscar caixa para obter nome de exibição
-    const caixas = await getCaixasCME();
-    const caixa = caixas.find(c => c.nome_tabela === tabela);
+    const caixas = await getCaixasCMECached();
+    const caixa = caixas.find((c: { nome_tabela: string }) => c.nome_tabela === tabela);
 
     if (!caixa) {
       return NextResponse.json(
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     }
 
     // Buscar todos os instrumentos da caixa
-    const resultadoPaginado = await getInstrumentosDaTabela(tabela, 1, 1000);
+    const resultadoPaginado = await getInstrumentosDaTabelaCached(tabela, 1, 1000);
     const todosInstrumentos = resultadoPaginado.instrumentos;
 
     // Filtrar apenas os instrumentos do grupo usando a mesma lógica de extração
