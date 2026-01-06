@@ -27,13 +27,15 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Determinar se deve usar fundo sólido
+  // Determinar estilo do navbar baseado no scroll e página
+  // Em páginas com hero: começa transparente, fica com blur ao scrollar
+  // Em outras páginas: sempre com fundo sólido
   const usarFundoSolido = !temHero || isScrolled;
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       usarFundoSolido
-        ? 'bg-medical-dark shadow-lg'
+        ? 'bg-medical-dark/90 backdrop-blur-md shadow-lg'
         : 'bg-transparent'
     }`}>
       <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-16">
