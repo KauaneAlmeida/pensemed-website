@@ -27,24 +27,26 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Determinar estilo do navbar baseado no scroll e página
-  // Em páginas com hero: começa transparente, fica com blur ao scrollar
-  // Em outras páginas: sempre com fundo sólido
-  const usarFundoSolido = !temHero || isScrolled;
+  // Navbar transparente na home sem scroll, com fundo ao scrollar ou em outras páginas
+  const mostrarFundo = !temHero || isScrolled;
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      usarFundoSolido
-        ? 'bg-medical-dark/90 backdrop-blur-md shadow-lg'
-        : 'bg-transparent'
-    }`}>
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      style={{
+        backgroundColor: mostrarFundo ? 'rgba(10, 26, 46, 0.95)' : 'transparent',
+        backdropFilter: mostrarFundo ? 'blur(12px)' : 'none',
+        WebkitBackdropFilter: mostrarFundo ? 'blur(12px)' : 'none',
+        boxShadow: mostrarFundo ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
+      }}
+    >
       <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-16">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             {/* Ícone PM */}
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              usarFundoSolido ? 'bg-white/20' : 'bg-medical-dark'
+              mostrarFundo ? 'bg-white/20' : 'bg-white/10'
             } text-white`}>
               <span className="font-bold text-lg">PM</span>
             </div>
