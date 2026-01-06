@@ -166,7 +166,7 @@ export default function HomePage() {
           <div className="text-center mb-10 sm:mb-14 lg:mb-16">
             <AnimateOnScroll animation="fade-up" duration={800}>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
-                Por Que Escolher a PenseMedical?
+                Por Que Escolher a PenseMed?
               </h2>
             </AnimateOnScroll>
             <AnimateOnScroll animation="fade-up" delay={200} duration={800}>
@@ -200,8 +200,18 @@ export default function HomePage() {
       </section>
 
       {/* Seção de Produtos em Destaque */}
-      <section className="py-16 sm:py-20 md:py-24 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-16 sm:py-20 md:py-24 bg-white overflow-hidden">
+          {/* Imagem de ondas decorativa no fundo */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <Image
+              src="/images/waves-bg.png"
+              alt=""
+              fill
+              className="object-cover opacity-[0.08]"
+            />
+          </div>
+
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
               <AnimateOnScroll animation="fade-up" duration={800}>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
@@ -216,7 +226,7 @@ export default function HomePage() {
             </div>
 
             {/* Grid de Produtos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
               {produtosDestaque.map((produto, index) => (
                 <AnimateOnScroll
                   key={index}
@@ -244,7 +254,7 @@ export default function HomePage() {
 
             {/* CTA Ver todos */}
             <AnimateOnScroll animation="fade-in" delay={800} duration={700}>
-              <div className="text-center mt-10 sm:mt-12 lg:mt-14">
+              <div className="relative z-10 text-center mt-10 sm:mt-12 lg:mt-14">
                 <Link
                   href="/catalogo"
                   className="inline-flex items-center justify-center gap-2 sm:gap-3 px-8 py-4 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-lg font-semibold text-base sm:text-lg transition-colors shadow-lg hover:shadow-xl"

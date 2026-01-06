@@ -48,7 +48,7 @@ export default function Navbar() {
             </div>
             {/* Nome e subtítulo */}
             <div className="hidden sm:block">
-              <div className="text-white font-bold text-xl leading-tight">PenseMedical</div>
+              <div className="text-white font-bold text-xl leading-tight">PenseMed</div>
               <div className="text-white/70 text-xs">Tecnologia Médica</div>
             </div>
           </Link>

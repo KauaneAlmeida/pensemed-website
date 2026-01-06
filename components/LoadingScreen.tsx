@@ -12,11 +12,11 @@ export default function LoadingScreen({
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center justify-center">
-        {/* Logo PenseMedical */}
+        {/* Logo PenseMed */}
         <div className="mb-8">
           <h1 className="text-4xl font-semibold tracking-tight">
             <span className="text-blue-600">Pense</span>
-            <span className="text-slate-700">Medical</span>
+            <span className="text-slate-700">Med</span>
           </h1>
           <p className="text-[11px] text-slate-400 mt-2 tracking-[0.2em] uppercase text-center">
             tecnologia médica
