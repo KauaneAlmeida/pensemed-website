@@ -5,10 +5,38 @@
 @layer base {
   html {
     @apply scroll-smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50;
+    color: #111;
+    font-weight: 400;
+  }
+
+  /* Tipografia premium - títulos com peso moderado e tracking fino */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    letter-spacing: -0.025em;
+  }
+
+  h3, h4 {
+    letter-spacing: -0.015em;
+  }
+
+  /* Parágrafos com peso leve */
+  p {
+    font-weight: 400;
   }
 }
 

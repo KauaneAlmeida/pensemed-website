@@ -8,6 +8,8 @@ const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  weight: ['400', '500', '600'],
+  fallback: ['Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
 });
 
 const openSans = Open_Sans({
@@ -17,9 +19,9 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'PenseMedical - Tecnologia Médica de Alta Complexidade',
+  title: 'PenseMed - Tecnologia Médica de Alta Complexidade',
   description:
-    'PenseMedical - Tecnologia Médica de Alta Complexidade. Equipamentos de ponta para procedimentos cirúrgicos, geradores de RF, sistemas de artroscopia e mais.',
+    'PenseMed - Tecnologia Médica de Alta Complexidade. Equipamentos de ponta para procedimentos cirúrgicos, geradores de RF, sistemas de artroscopia e mais.',
   keywords: [
     'equipamentos médicos',
     'tecnologia médica',
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
     'neuroestimuladores',
   ],
   openGraph: {
-    title: 'PenseMedical - Tecnologia Médica que Transforma Vidas',
+    title: 'PenseMed - Tecnologia Médica que Transforma Vidas',
     description: 'Equipamentos médicos de alta complexidade para centros cirúrgicos. Geradores de RF, sistemas de artroscopia, lasers médicos e neuroestimuladores.',
     type: 'website',
     locale: 'pt_BR',

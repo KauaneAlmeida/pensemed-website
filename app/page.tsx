@@ -111,11 +111,11 @@ export default function HomePage() {
           {/* Bloco de texto centralizado */}
           <div className="flex flex-col items-center text-center">
             {/* Título principal */}
-            <h1 className="font-bold mb-8 leading-[1.05] tracking-tight animate-fade-in-up">
-              <span className="block text-white text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
+            <h1 className="font-semibold sm:font-medium mb-8 leading-[1.05] tracking-[-0.03em] animate-fade-in-up">
+              <span className="block text-white/95 text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
                 Tecnologia Médica que
               </span>
-              <span className="block text-[#00d4ff] text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl mt-1 sm:mt-2">
+              <span className="block text-[#00d4ff] text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl mt-1 sm:mt-2">
                 Transforma Vidas
               </span>
             </h1>
@@ -129,7 +129,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 w-full sm:w-auto justify-center animate-fade-in-up animation-delay-400">
               <a
                 href="#nossos-equipamentos"
-                className="group inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-[#0a1a2e] hover:bg-gray-100 rounded-lg font-semibold text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="group inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-[#0a1a2e] hover:bg-gray-100 rounded-lg font-medium text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 Explore Nosso Portfólio
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
@@ -138,7 +138,7 @@ export default function HomePage() {
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 text-white font-semibold text-base sm:text-lg transition-all duration-300 border border-white/30 rounded-lg hover:border-white/50 hover:bg-white/5"
+                className="inline-flex items-center justify-center gap-2 px-7 sm:px-8 py-3.5 sm:py-4 text-white/90 font-medium text-base sm:text-lg transition-all duration-300 border border-white/30 rounded-lg hover:border-white/50 hover:bg-white/5"
               >
                 Solicite uma Consultoria
               </a>
@@ -165,18 +165,18 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center mb-10 sm:mb-14 lg:mb-16">
             <AnimateOnScroll animation="fade-up" duration={800}>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-[#111] mb-4 sm:mb-6 tracking-[-0.025em]">
                 Por Que Escolher a PenseMed?
               </h2>
             </AnimateOnScroll>
             <AnimateOnScroll animation="fade-up" delay={200} duration={800}>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-[#555] max-w-2xl mx-auto leading-relaxed">
                 Compromisso com excelência e inovação em cada equipamento
               </p>
             </AnimateOnScroll>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6">
             {diferenciais.map((diferencial, index) => (
               <AnimateOnScroll
                 key={index}
@@ -184,14 +184,14 @@ export default function HomePage() {
                 delay={400 + index * 150}
                 duration={800}
               >
-                <div className="h-full flex flex-col items-center text-center p-5 md:p-6 bg-white rounded-xl border border-blue-800 hover:shadow-lg transition-shadow duration-300">
-                  <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="h-full flex flex-col items-center text-center p-3 sm:p-5 md:p-6 bg-white rounded-lg sm:rounded-xl border border-blue-800 hover:shadow-lg transition-shadow duration-300">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-blue-50 rounded-full flex items-center justify-center mb-2 sm:mb-4">
+                    <svg className="w-5 h-5 sm:w-7 sm:h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={diferencial.iconPath} />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{diferencial.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{diferencial.description}</p>
+                  <h3 className="text-xs sm:text-lg font-medium text-[#111] mb-1 sm:mb-2 tracking-[-0.015em] line-clamp-2">{diferencial.title}</h3>
+                  <p className="text-[10px] sm:text-sm text-[#555] leading-relaxed line-clamp-3 sm:line-clamp-none">{diferencial.description}</p>
                 </div>
               </AnimateOnScroll>
             ))}
@@ -207,26 +207,27 @@ export default function HomePage() {
               src="/images/waves-bg.png"
               alt=""
               fill
-              className="object-cover opacity-[0.08]"
+              className="object-cover opacity-25"
+              sizes="100vw"
             />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
               <AnimateOnScroll animation="fade-up" duration={800}>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-[#111] mb-4 sm:mb-6 tracking-[-0.025em]">
                   Equipamentos de Alta Tecnologia
                 </h2>
               </AnimateOnScroll>
               <AnimateOnScroll animation="fade-up" delay={200} duration={800}>
-                <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg md:text-xl text-[#555] max-w-2xl mx-auto leading-relaxed">
                   Conheça nossa linha completa de equipamentos médicos de última geração
                 </p>
               </AnimateOnScroll>
             </div>
 
-            {/* Grid de Produtos */}
-            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+            {/* Grid de Produtos - 2 colunas em mobile para cards menores */}
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
               {produtosDestaque.map((produto, index) => (
                 <AnimateOnScroll
                   key={index}
@@ -234,18 +235,18 @@ export default function HomePage() {
                   delay={300 + index * 150}
                   duration={800}
                 >
-                  <div className="group bg-white rounded-xl sm:rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden h-full flex flex-col">
-                    <div className="aspect-[4/3] relative overflow-hidden bg-gray-50 p-4 sm:p-6">
+                  <div className="group bg-white rounded-lg sm:rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-lg transition-all duration-500 overflow-hidden h-full flex flex-col">
+                    <div className="aspect-square sm:aspect-[4/3] relative overflow-hidden bg-gray-50 p-2 sm:p-6">
                       <Image
                         src={produto.imagem}
                         alt={produto.nome}
                         fill
-                        className="object-contain group-hover:scale-105 transition-transform duration-500 p-2"
+                        className="object-contain group-hover:scale-105 transition-transform duration-500 p-1 sm:p-2"
                       />
                     </div>
-                    <div className="p-4 sm:p-5 flex flex-col flex-grow bg-white">
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">{produto.nome}</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed flex-grow">{produto.descricao}</p>
+                    <div className="p-2.5 sm:p-5 flex flex-col flex-grow bg-white">
+                      <h3 className="text-xs sm:text-lg font-medium text-[#111] mb-1 sm:mb-2 tracking-[-0.015em] line-clamp-2">{produto.nome}</h3>
+                      <p className="text-[#555] text-[10px] sm:text-sm leading-relaxed flex-grow line-clamp-2 sm:line-clamp-none">{produto.descricao}</p>
                     </div>
                   </div>
                 </AnimateOnScroll>
@@ -257,7 +258,7 @@ export default function HomePage() {
               <div className="relative z-10 text-center mt-10 sm:mt-12 lg:mt-14">
                 <Link
                   href="/catalogo"
-                  className="inline-flex items-center justify-center gap-2 sm:gap-3 px-8 py-4 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-lg font-semibold text-base sm:text-lg transition-colors shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center gap-2 sm:gap-3 px-8 py-4 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-lg font-medium text-base sm:text-lg transition-colors shadow-lg hover:shadow-xl"
                 >
                   Ver Catálogo Completo
                   <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,12 +275,12 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 sm:mb-14">
               <AnimateOnScroll animation="fade-up" duration={800}>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-[#111] mb-4 sm:mb-6 tracking-[-0.025em]">
                   Nossos Equipamentos
                 </h2>
               </AnimateOnScroll>
               <AnimateOnScroll animation="fade-up" delay={200} duration={800}>
-                <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg md:text-xl text-[#555] max-w-2xl mx-auto leading-relaxed">
                   Tecnologia de ponta para procedimentos de alta complexidade
                 </p>
               </AnimateOnScroll>
@@ -301,9 +302,9 @@ export default function HomePage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                             </svg>
                           </div>
-                          <h3 className="text-xl sm:text-2xl lg:text-2xl font-bold text-white mb-3 sm:mb-4">{categoria.nome}</h3>
+                          <h3 className="text-xl sm:text-2xl lg:text-2xl font-medium text-white/95 mb-3 sm:mb-4 tracking-[-0.02em]">{categoria.nome}</h3>
                           <p className="text-sm sm:text-base text-gray-400 mb-5 sm:mb-6 leading-relaxed flex-grow">{categoria.descricao}</p>
-                          <div className="flex items-center gap-2 text-[#00d4ff] font-semibold text-sm sm:text-base">
+                          <div className="flex items-center gap-2 text-[#00d4ff] font-medium text-sm sm:text-base">
                             <span>Ver produtos</span>
                             <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -336,7 +337,7 @@ export default function HomePage() {
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-16">
               <AnimateOnScroll animation="fade-up" duration={800}>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-white/95 mb-4 sm:mb-6 tracking-[-0.025em]">
                   Números que Inspiram Confiança
                 </h2>
               </AnimateOnScroll>
@@ -412,7 +413,7 @@ export default function HomePage() {
 
           <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <AnimateOnScroll animation="fade-up" duration={800}>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-white/95 mb-4 sm:mb-6 leading-tight tracking-[-0.025em]">
                 Pronto para elevar o padrão do seu centro cirúrgico?
               </h2>
             </AnimateOnScroll>
@@ -428,7 +429,7 @@ export default function HomePage() {
                   href={whatsappLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-white hover:bg-gray-100 text-[#0a1628] rounded-lg font-semibold text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="group inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-white hover:bg-gray-100 text-[#0a1628] rounded-lg font-medium text-base sm:text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Solicitar Orçamento
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -440,7 +441,7 @@ export default function HomePage() {
                   href={whatsappLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-transparent border-2 border-white/40 text-white hover:bg-white/10 hover:border-white/60 rounded-lg font-semibold text-base sm:text-lg transition-all duration-300"
+                  className="inline-flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 bg-transparent border-2 border-white/40 text-white/90 hover:bg-white/10 hover:border-white/60 rounded-lg font-medium text-base sm:text-lg transition-all duration-300"
                 >
                   <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
