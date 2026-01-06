@@ -28,12 +28,19 @@ export async function generateMetadata({ params }: CategoriaPageProps): Promise<
 }
 
 // Gerar rotas estáticas em build time
+// Exclui 'opme' pois tem página dedicada em /categorias/opme
 export async function generateStaticParams() {
-  const slugs = Object.keys(CATEGORIAS_MAP);
+  const slugs = Object.keys(CATEGORIAS_MAP).filter(slug => slug !== 'opme');
   return slugs.map((slug) => ({ slug }));
 }
 
 export default async function CategoriaPage({ params }: CategoriaPageProps) {
+  // Redireciona OPME para página dedicada
+  if (params.slug === 'opme') {
+    const { redirect } = await import('next/navigation');
+    redirect('/categorias/opme');
+  }
+
   const categoria = getCategoriaBySlug(params.slug);
 
   // Se a categoria não existir, retorna 404
