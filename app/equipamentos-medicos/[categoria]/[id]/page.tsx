@@ -8,6 +8,8 @@ import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
 import BackButton from '@/components/BackButton';
 
+export const dynamic = 'force-dynamic';
+
 interface EquipamentoDetailPageProps {
   params: {
     categoria: string;

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getInstrumentosDaTabela, getCaixasCME } from '@/lib/api';
 import { InstrumentoCME } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * Extrai o nome base de um instrumento para comparação
  * Usa a mesma lógica da função agruparInstrumentosPorNome
