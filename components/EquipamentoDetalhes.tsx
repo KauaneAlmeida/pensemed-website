@@ -125,9 +125,9 @@ export default function EquipamentoDetalhes({
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
         {/* Galeria de Imagens */}
-        <div className="p-4 lg:p-6">
+        <div className="p-2 sm:p-4 lg:p-6">
           {loadingImages ? (
             <div className="aspect-square flex items-center justify-center bg-gray-100 rounded-lg">
               <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
@@ -141,28 +141,28 @@ export default function EquipamentoDetalhes({
         </div>
 
         {/* Informações */}
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Código - só mostra se for válido */}
           {mostrarCodigo && dadosExibicao.codigo && dadosExibicao.codigo.length < 20 && (
-            <div className="inline-block px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold mb-4">
+            <div className="inline-block px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-50 text-emerald-700 rounded-lg font-semibold mb-4 text-sm sm:text-base">
               Código: {dadosExibicao.codigo}
             </div>
           )}
 
           {/* Título - Nome base do equipamento */}
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 break-words">
             {nomeBase}
           </h1>
 
           {/* Subtítulo - Categoria */}
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
             {nomeExibicao}
           </p>
 
           {/* SELETOR DE VARIAÇÕES */}
           {variacoes.length > 1 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
                 Selecione a variação:
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -171,7 +171,7 @@ export default function EquipamentoDetalhes({
                     key={variacao.id}
                     onClick={() => handleVariacaoClick(variacao)}
                     className={`
-                      px-4 py-2 rounded-lg border-2 font-medium transition-all duration-200
+                      px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border-2 font-medium transition-all duration-200 text-sm sm:text-base
                       ${variacaoSelecionada?.id === variacao.id
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
@@ -196,18 +196,18 @@ export default function EquipamentoDetalhes({
           )}
 
           {/* Descrição */}
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Descrição</h2>
-            <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Descrição</h2>
+            <div className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
               {dadosExibicao.descricao || descricaoCompleta}
             </div>
           </div>
 
           {/* Disponibilidade */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
               <svg
-                className="w-6 h-6 text-green-600"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -218,10 +218,10 @@ export default function EquipamentoDetalhes({
                 />
               </svg>
               <div>
-                <p className="font-semibold text-green-900">
+                <p className="font-semibold text-green-900 text-sm sm:text-base">
                   Disponível para locação
                 </p>
-                <p className="text-sm text-green-700">
+                <p className="text-xs sm:text-sm text-green-700">
                   Entre em contato para verificar disponibilidade
                 </p>
               </div>
@@ -229,7 +229,7 @@ export default function EquipamentoDetalhes({
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <WhatsAppButton
               href={whatsappUrl}
               label="Solicitar Informações via WhatsApp"
@@ -238,15 +238,15 @@ export default function EquipamentoDetalhes({
 
             <Link
               href="/equipamentos-medicos"
-              className="w-full text-center px-6 py-3 bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg font-semibold transition-colors duration-200"
+              className="w-full text-center px-4 sm:px-6 py-2.5 sm:py-3 bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg font-semibold transition-colors duration-200 text-sm sm:text-base"
             >
               Voltar para Equipamentos Médicos
             </Link>
           </div>
 
           {/* Informações Adicionais */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
               Informações Importantes
             </h3>
             <ul className="space-y-2 text-sm text-gray-600">

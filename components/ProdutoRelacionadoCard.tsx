@@ -64,24 +64,24 @@ export default function ProdutoRelacionadoCard({
   return (
     <Link
       href={`${baseUrl}/${caixaSlug}/${id}`}
-      className={`group bg-white rounded-xl border border-gray-100 ${hoverColor} hover:shadow-lg transition-all duration-300 overflow-hidden`}
+      className={`group bg-white rounded-lg sm:rounded-xl border border-gray-100 ${hoverColor} hover:shadow-lg transition-all duration-300 overflow-hidden`}
     >
       {/* Imagem */}
       <div className="aspect-square relative bg-white">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className={`w-8 h-8 border-2 border-gray-200 ${spinnerColor} rounded-full animate-spin`} />
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 ${spinnerColor} rounded-full animate-spin`} />
           </div>
         ) : imagemUrl ? (
           <Image
             src={imagemUrl}
             alt={nome}
             fill
-            className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+            className="object-contain p-2 sm:p-3 group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
@@ -89,11 +89,11 @@ export default function ProdutoRelacionadoCard({
       </div>
 
       {/* Info */}
-      <div className="p-4">
-        <h3 className={`font-medium text-sm text-gray-900 line-clamp-2 ${textHoverColor} transition-colors`}>
+      <div className="p-2 sm:p-4">
+        <h3 className={`font-medium text-xs sm:text-sm text-gray-900 line-clamp-2 ${textHoverColor} transition-colors`}>
           {nome}
         </h3>
-        <p className="text-xs text-gray-500 mt-1">{caixaNome}</p>
+        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 line-clamp-1">{caixaNome}</p>
       </div>
     </Link>
   );

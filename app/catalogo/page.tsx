@@ -364,10 +364,10 @@ function CatalogoContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 pb-8 sm:pb-16">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="text-sm text-gray-500 mb-6">
+        <nav className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
           <Link href="/" className="hover:text-gray-700 transition-colors">
             Página Inicial
           </Link>
@@ -482,33 +482,33 @@ function CatalogoContent() {
 
             {/* Grid de produtos */}
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl overflow-hidden animate-pulse">
+                  <div key={i} className="bg-white rounded-lg sm:rounded-xl overflow-hidden animate-pulse">
                     <div className="aspect-square bg-gray-200" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="p-2 sm:p-4 space-y-2">
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-2 sm:h-3 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : catalogo?.produtos.length === 0 ? (
-              <div className="text-center py-16">
-                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-center py-8 sm:py-16">
+                <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum produto encontrado</h3>
-                <p className="text-gray-500 mb-4">Tente ajustar os filtros ou a busca</p>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Nenhum produto encontrado</h3>
+                <p className="text-sm sm:text-base text-gray-500 mb-4">Tente ajustar os filtros ou a busca</p>
                 <button
                   onClick={limparFiltros}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm sm:text-base"
                 >
                   Limpar filtros
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
                 {catalogo?.produtos.map((produto) => (
                   <CatalogProductCard key={produto.id} produto={produto} />
                 ))}
@@ -517,11 +517,11 @@ function CatalogoContent() {
 
             {/* Paginação */}
             {catalogo && catalogo.totalPaginas > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-10">
+              <div className="flex justify-center items-center gap-1 sm:gap-2 mt-6 sm:mt-10">
                 <button
                   onClick={() => updateFilters({ pagina: String(pagina - 1) })}
                   disabled={pagina <= 1}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Anterior
                 </button>
@@ -543,7 +543,7 @@ function CatalogoContent() {
                       <button
                         key={pageNum}
                         onClick={() => updateFilters({ pagina: String(pageNum) })}
-                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                           pagina === pageNum
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-700 hover:bg-gray-50'
@@ -558,7 +558,7 @@ function CatalogoContent() {
                 <button
                   onClick={() => updateFilters({ pagina: String(pagina + 1) })}
                   disabled={pagina >= catalogo.totalPaginas}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Próxima
                 </button>
