@@ -109,8 +109,8 @@ export default function EquipamentoDetalhes({
 
   const handleVariacaoClick = (variacao: VariacaoEquipamento) => {
     setVariacaoSelecionada(variacao);
-    // Navegar para a URL da variação (soft navigation)
-    router.push(`/equipamentos-medicos/${categoriaSlug}/${variacao.id}`, { scroll: false });
+    // Navegar para a URL da variação (soft navigation, replace para não poluir histórico)
+    router.replace(`/equipamentos-medicos/${categoriaSlug}/${variacao.id}`, { scroll: false });
   };
 
   // WhatsApp message com a variação selecionada

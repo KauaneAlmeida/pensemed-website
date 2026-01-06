@@ -109,8 +109,8 @@ export default function InstrumentoDetalhes({
 
   const handleVariacaoClick = (variacao: Variacao) => {
     setVariacaoSelecionada(variacao);
-    // Navegar para a URL da variação (soft navigation)
-    router.push(`/instrumentacao-cme/${categoriaSlug}/${variacao.id}`, { scroll: false });
+    // Navegar para a URL da variação (soft navigation, replace para não poluir histórico)
+    router.replace(`/instrumentacao-cme/${categoriaSlug}/${variacao.id}`, { scroll: false });
   };
 
   // WhatsApp message com a variação selecionada
