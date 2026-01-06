@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface BackButtonProps {
   fallbackUrl?: string;
@@ -13,20 +13,9 @@ export default function BackButton({
   label = 'Voltar',
   className = '',
 }: BackButtonProps) {
-  const router = useRouter();
-
-  const handleBack = () => {
-    // Verifica se há histórico de navegação
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(fallbackUrl);
-    }
-  };
-
   return (
-    <button
-      onClick={handleBack}
+    <Link
+      href={fallbackUrl}
       className={`inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors ${className}`}
     >
       <svg
@@ -43,6 +32,6 @@ export default function BackButton({
         />
       </svg>
       <span className="text-sm font-medium">{label}</span>
-    </button>
+    </Link>
   );
 }
