@@ -124,10 +124,10 @@ export default function EquipamentoDetalhes({
   const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="bg-white rounded-xl shadow-lg overflow-visible">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
         {/* Galeria de Imagens */}
-        <div className="p-2 sm:p-4 lg:p-6">
+        <div className="p-3 sm:p-4 lg:p-6">
           {loadingImages ? (
             <div className="aspect-square flex items-center justify-center bg-gray-100 rounded-lg">
               <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
