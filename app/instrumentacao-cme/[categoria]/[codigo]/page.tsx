@@ -6,7 +6,6 @@ import { slugToTabela, codigoValido, enriquecerDescricao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import InstrumentoDetalhes from '@/components/InstrumentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
-import BackButton from '@/components/BackButton';
 
 // ISR: revalidar a cada 5 minutos
 export const revalidate = 300;
@@ -220,12 +219,6 @@ export default async function InstrumentoDetailPage({
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <BackButton
-              fallbackUrl={`/instrumentacao-cme/${params.categoria}`}
-              label="Voltar"
-            />
-          </div>
           <nav className="flex items-center gap-2 text-sm flex-wrap">
             <Link href="/" className="text-medical hover:text-medical-dark">
               Início

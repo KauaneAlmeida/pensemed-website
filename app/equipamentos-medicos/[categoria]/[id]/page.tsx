@@ -6,7 +6,6 @@ import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento } from '@/li
 import { supabase } from '@/lib/supabaseClient';
 import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
-import BackButton from '@/components/BackButton';
 
 // ISR: revalidar a cada 5 minutos
 export const revalidate = 300;
@@ -173,12 +172,6 @@ export default async function EquipamentoDetailPage({
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <BackButton
-              fallbackUrl={`/equipamentos-medicos/${params.categoria}`}
-              label="Voltar"
-            />
-          </div>
           <nav className="flex items-center gap-2 text-sm flex-wrap">
             <Link href="/" className="text-emerald-600 hover:text-emerald-700">
               Início
