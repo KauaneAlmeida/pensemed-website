@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+// Página dedicada da categoria OPME - Em breve
 export default function OPMEPage() {
   return (
     <div className="min-h-screen bg-gray-50">
