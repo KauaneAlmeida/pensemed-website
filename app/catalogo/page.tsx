@@ -413,10 +413,9 @@ function CatalogoContent() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Botão Compartilhar - Desktop */}
+                {/* Botão Compartilhar */}
                 <ShareDropdown
                   title="Catálogo PenseMed"
-                  className="hidden sm:block"
                 />
 
                 {/* Botão Filtros - Desktop/Tablet (mostra/esconde sidebar) */}

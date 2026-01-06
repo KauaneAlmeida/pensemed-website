@@ -514,7 +514,6 @@ function CaixaCMEContent() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <ShareDropdown
                   title={caixa?.nome_exibicao || 'Instrumentação CME'}
-                  className="hidden sm:block"
                 />
 
                 <button onClick={() => setShowMobileFilters(true)} className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">

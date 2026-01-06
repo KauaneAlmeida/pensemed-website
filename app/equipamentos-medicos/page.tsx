@@ -330,11 +330,10 @@ function EquipamentosMedicosContent() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Botão Compartilhar - Desktop */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Botão Compartilhar */}
                 <ShareDropdown
                   title="Equipamentos Médicos - PenseMed"
-                  className="hidden sm:block"
                 />
 
                 {/* Botão Filtros - Desktop/Tablet */}
