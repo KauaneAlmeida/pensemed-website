@@ -6,6 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import { agruparInstrumentos, getBadgeVariacoes, InstrumentoAgrupado } from '@/lib/instrumentUtils';
+import LoadingScreen from '@/components/LoadingScreen';
+import ShareDropdown from '@/components/ShareDropdown';
+import BackButton from '@/components/BackButton';
 
 interface Equipamento {
   id: string;
@@ -61,26 +64,40 @@ function FilterSection({
   );
 }
 
-// Componente de busca isolado
+// Componente de busca 100% isolado com estado não-controlado
+// Usa ref para manter o valor e não depende de props externas durante digitação
 function SearchInput({
   initialValue,
   onSearch,
   placeholder = "Buscar...",
+  className = "mb-6",
+  showClearButton = false,
+  inputId,
 }: {
   initialValue: string;
   onSearch: (value: string) => void;
   placeholder?: string;
+  className?: string;
+  showClearButton?: boolean;
+  inputId?: string;
 }) {
-  const [value, setValue] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [displayValue, setDisplayValue] = useState(initialValue);
 
+  // Sincroniza apenas quando limpar filtros (valor vazio vindo de fora)
   useEffect(() => {
-    setValue(initialValue);
+    if (initialValue === '' && displayValue !== '') {
+      setDisplayValue('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+    }
   }, [initialValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setValue(newValue);
+    setDisplayValue(newValue);
 
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -89,6 +106,18 @@ function SearchInput({
     timerRef.current = setTimeout(() => {
       onSearch(newValue);
     }, 400);
+  };
+
+  const handleClear = () => {
+    setDisplayValue('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    onSearch('');
   };
 
   useEffect(() => {
@@ -100,25 +129,38 @@ function SearchInput({
   }, []);
 
   return (
-    <div className="mb-6">
+    <div className={className}>
       <div className="relative">
         <input
+          ref={inputRef}
+          id={inputId}
           type="text"
-          value={value}
+          defaultValue={initialValue}
           onChange={handleChange}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+          className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
           autoComplete="off"
           spellCheck={false}
         />
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
+        {showClearButton && displayValue && (
+          <button
+            onClick={handleClear}
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -135,7 +177,7 @@ function EquipamentoCard({ equipamento, slugCategoria }: { equipamento: Instrume
       href={`/equipamentos-medicos/${slugCategoria}/${equipamento.id}`}
       className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 block"
     >
-      <div className="aspect-square relative overflow-hidden bg-gray-50">
+      <div className="aspect-square relative overflow-hidden bg-white">
         {imagemUrl ? (
           <Image
             src={imagemUrl}
@@ -299,18 +341,6 @@ function CategoriaEquipamentoContent() {
     router.push(`/equipamentos-medicos/${categoriaSlug}`);
   };
 
-  const handleCompartilhar = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: categoria?.nome_exibicao || 'Equipamentos Médicos',
-        text: `Confira os equipamentos de ${categoria?.nome_exibicao}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copiado para a área de transferência!');
-    }
-  };
 
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className={isMobile ? '' : 'sticky top-24'}>
@@ -380,20 +410,19 @@ function CategoriaEquipamentoContent() {
   );
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Carregando equipamentos...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Carregando equipamentos..." />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b pt-20">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <BackButton
+              fallbackUrl="/equipamentos-medicos"
+              label="Voltar"
+            />
+          </div>
           <nav className="flex items-center gap-2 text-sm">
             <Link href="/" className="text-emerald-600 hover:text-emerald-700">Início</Link>
             <span className="text-gray-400">/</span>
@@ -426,12 +455,10 @@ function CategoriaEquipamentoContent() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button onClick={handleCompartilhar} className="hidden sm:flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  Compartilhar
-                </button>
+                <ShareDropdown
+                  title={categoria?.nome_exibicao || 'Equipamentos Médicos'}
+                  className="hidden sm:block"
+                />
 
                 <button onClick={() => setShowMobileFilters(true)} className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,16 +526,7 @@ function CategoriaEquipamentoContent() {
 
 export default function CategoriaEquipamentoPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Carregando...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen />}>
       <CategoriaEquipamentoContent />
     </Suspense>
   );

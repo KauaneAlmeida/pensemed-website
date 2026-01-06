@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { ImageGalleryFull, GalleryImage } from '@/components/ImageGallery';
+import { getProductImages } from '@/hooks/useProductImages';
 
 export interface Variacao {
   id: number;
@@ -29,6 +30,7 @@ interface InstrumentoDetalhesProps {
   categoriaSlug: string;
   descricaoCompleta: string;
   mostrarCodigo: boolean;
+  nomeTabela?: string;
 }
 
 export default function InstrumentoDetalhes({
@@ -38,11 +40,56 @@ export default function InstrumentoDetalhes({
   categoriaSlug,
   descricaoCompleta,
   mostrarCodigo,
+  nomeTabela,
 }: InstrumentoDetalhesProps) {
   const router = useRouter();
   const [variacaoSelecionada, setVariacaoSelecionada] = useState<Variacao | null>(
     variacoes.find(v => v.id === instrumento.id) || null
   );
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  // Buscar imagens do produto da tabela de imagens
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (!nomeTabela) {
+        setLoadingImages(false);
+        return;
+      }
+
+      const productId = variacaoSelecionada?.id || instrumento.id;
+
+      try {
+        const { data, error } = await getProductImages(productId, nomeTabela);
+        if (!error && data && data.length > 0) {
+          setImages(data.map(img => ({
+            id: img.id,
+            url: img.url,
+            ordem: img.ordem,
+            principal: img.principal,
+          })));
+        } else {
+          // Fallback para imagem_url do instrumento
+          const fallbackUrl = variacaoSelecionada?.imagem_url || instrumento.imagem_url;
+          if (fallbackUrl) {
+            setImages([{ url: fallbackUrl, principal: true }]);
+          } else {
+            setImages([]);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar imagens:', err);
+        const fallbackUrl = variacaoSelecionada?.imagem_url || instrumento.imagem_url;
+        if (fallbackUrl) {
+          setImages([{ url: fallbackUrl, principal: true }]);
+        }
+      }
+
+      setLoadingImages(false);
+    };
+
+    fetchImages();
+  }, [instrumento.id, instrumento.imagem_url, variacaoSelecionada, nomeTabela]);
 
   // Dados a exibir (da variação selecionada ou do instrumento original)
   const dadosExibicao = variacaoSelecionada || {
@@ -74,24 +121,22 @@ export default function InstrumentoDetalhes({
     ? ` (${variacaoSelecionada.variacaoTexto})`
     : '';
   const whatsappMessage = `Olá! Gostaria de informações sobre o instrumento ${codigoMsg}${nomeBase}${variacaoMsg} da ${nomeExibicao}`;
-  const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Imagem */}
-        <div className="relative bg-gray-100 min-h-[400px] lg:min-h-[600px]">
-          {dadosExibicao.imagem_url ? (
-            <Image
-              src={dadosExibicao.imagem_url}
-              alt={dadosExibicao.nome}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
+        {/* Galeria de Imagens */}
+        <div>
+          {loadingImages ? (
+            <div className="aspect-square bg-gray-100 animate-pulse" />
+          ) : images.length > 0 ? (
+            <ImageGalleryFull
+              images={images}
+              productName={dadosExibicao.nome}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-gray-200">
+            <div className="aspect-square relative bg-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-gray-200">
               <svg
                 className="w-32 h-32 text-gray-400 mb-4"
                 fill="none"

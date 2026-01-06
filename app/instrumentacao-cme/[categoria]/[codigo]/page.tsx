@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { getInstrumentoDaTabela, getCaixasCME, getProdutosRelacionados, getVariacoesInstrumento, TABELAS_CME, VariacaoInstrumento } from '@/lib/api';
 import { slugToTabela, codigoValido, enriquecerDescricao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import InstrumentoDetalhes from '@/components/InstrumentoDetalhes';
+import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
+import BackButton from '@/components/BackButton';
 
 interface InstrumentoDetailPageProps {
   params: {
@@ -52,16 +53,39 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
     console.log('Tentando tabela:', tabela);
     try {
       let data: any = null;
+      let idUsado: number | null = null;
 
       // Se o código parece ser um ID numérico
       if (/^\d+$/.test(codigo)) {
-        console.log(`Buscando por ID numérico: ${codigo}`);
+        const idBuscado = parseInt(codigo, 10);
+        console.log(`Buscando por ID numérico: ${idBuscado}`);
+
+        // Primeiro tentar buscar por coluna 'id'
         const resultado = await supabase
           .from(tabela)
           .select('*')
-          .eq('id', parseInt(codigo, 10))
+          .eq('id', idBuscado)
           .single();
-        data = resultado.data;
+
+        if (!resultado.error && resultado.data) {
+          data = resultado.data;
+          idUsado = data.id;
+        } else if (resultado.error?.code === '42703') {
+          // Tabela não tem coluna 'id', buscar por índice
+          console.log(`Tabela ${tabela} não tem coluna id, buscando por índice...`);
+          const { data: allData, error: allError } = await supabase
+            .from(tabela)
+            .select('*')
+            .order('nome', { ascending: true });
+
+          if (!allError && allData) {
+            const idxBuscado = idBuscado - 1;
+            if (idxBuscado >= 0 && idxBuscado < allData.length) {
+              data = allData[idxBuscado];
+              idUsado = idBuscado;
+            }
+          }
+        }
       }
 
       // Se não encontrou por ID, tentar por código
@@ -72,7 +96,10 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
           .select('*')
           .eq('codigo', codigo)
           .single();
-        data = resultado.data;
+        if (!resultado.error) {
+          data = resultado.data;
+          idUsado = data?.id;
+        }
       }
 
       // Se não encontrou por código e temos nome decodificado, buscar por nome
@@ -83,7 +110,10 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
           .select('*')
           .eq('nome', nomeDecodificado)
           .single();
-        data = resultado.data;
+        if (!resultado.error) {
+          data = resultado.data;
+          idUsado = data?.id;
+        }
       }
 
       if (data) {
@@ -93,7 +123,7 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
 
         return {
           instrumento: {
-            id: data.id,
+            id: idUsado || data.id || parseInt(codigo, 10),
             nome: data.nome,
             codigo: data.codigo || null,
             descricao: data.descricao || null,
@@ -187,6 +217,12 @@ export default async function InstrumentoDetailPage({
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <BackButton
+              fallbackUrl={`/instrumentacao-cme/${params.categoria}`}
+              label="Voltar"
+            />
+          </div>
           <nav className="flex items-center gap-2 text-sm flex-wrap">
             <Link href="/" className="text-medical hover:text-medical-dark">
               Início
@@ -228,6 +264,7 @@ export default async function InstrumentoDetailPage({
           categoriaSlug={params.categoria}
           descricaoCompleta={descricaoCompleta}
           mostrarCodigo={mostrarCodigo}
+          nomeTabela={nomeTabela}
         />
       </div>
 
@@ -239,37 +276,15 @@ export default async function InstrumentoDetailPage({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {produtosRelacionados.map((relacionado) => (
-                <Link
+                <ProdutoRelacionadoCard
                   key={`${relacionado.caixa_tabela}-${relacionado.id}`}
-                  href={`/instrumentacao-cme/${relacionado.caixa_slug}/${relacionado.id}`}
-                  className="group bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
-                >
-                  {/* Imagem */}
-                  <div className="aspect-square relative bg-gray-50">
-                    {relacionado.imagem_url ? (
-                      <Image
-                        src={relacionado.imagem_url}
-                        alt={relacionado.nome}
-                        fill
-                        className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-4">
-                    <h3 className="font-medium text-sm text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {relacionado.nome}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">{relacionado.caixa_nome}</p>
-                  </div>
-                </Link>
+                  id={relacionado.id}
+                  nome={relacionado.nome}
+                  caixaTabela={relacionado.caixa_tabela}
+                  caixaSlug={relacionado.caixa_slug}
+                  caixaNome={relacionado.caixa_nome}
+                  imagemUrlFallback={relacionado.imagem_url}
+                />
               ))}
             </div>
 

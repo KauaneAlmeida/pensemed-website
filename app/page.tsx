@@ -122,7 +122,7 @@ export default function HomePage() {
 
             {/* Subtítulo */}
             <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/75 mb-10 sm:mb-12 max-w-2xl leading-relaxed animate-fade-in-up animation-delay-200">
-              Equipamentos de ponta para procedimentos de alta complexidade.
+              Equipamentos de ponta para procedimentos de alta precisão.
             </p>
 
             {/* CTAs */}
@@ -278,30 +278,30 @@ export default function HomePage() {
             {/* Grid de Categorias */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
               {categoriasComIcones.map((categoria, index) => (
-                <AnimateOnScroll
-                  key={categoria.slug}
-                  animation="fade-up"
-                  delay={300 + index * 180}
-                  duration={800}
-                >
-                  <Link href={categoria.href} className="group block h-full">
-                    <div className="bg-gradient-to-br from-[#0a1628] to-[#1a2d4a] rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 h-full flex flex-col transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2">
-                      <div className="w-16 h-16 sm:w-18 sm:h-18 lg:w-20 lg:h-20 bg-[#00d4ff]/15 rounded-xl sm:rounded-2xl flex items-center justify-center mb-5 sm:mb-6">
-                        <svg className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 text-[#00d4ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-xl sm:text-2xl lg:text-2xl font-bold text-white mb-3 sm:mb-4">{categoria.nome}</h3>
-                      <p className="text-sm sm:text-base text-gray-400 mb-5 sm:mb-6 leading-relaxed flex-grow">{categoria.descricao}</p>
-                      <div className="flex items-center gap-2 text-[#00d4ff] font-semibold text-sm sm:text-base">
-                        <span>Ver produtos</span>
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                      </div>
-                    </div>
-                  </Link>
-                </AnimateOnScroll>
+                  <AnimateOnScroll
+                    key={categoria.slug}
+                    animation="fade-up"
+                    delay={300 + index * 180}
+                    duration={800}
+                  >
+                    <Link href={categoria.href} className="group block h-full">
+                        <div className="bg-gradient-to-br from-[#0a1628] to-[#1a2d4a] rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 h-full flex flex-col transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2">
+                          <div className="w-16 h-16 sm:w-18 sm:h-18 lg:w-20 lg:h-20 bg-[#00d4ff]/15 rounded-xl sm:rounded-2xl flex items-center justify-center mb-5 sm:mb-6">
+                            <svg className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 text-[#00d4ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-xl sm:text-2xl lg:text-2xl font-bold text-white mb-3 sm:mb-4">{categoria.nome}</h3>
+                          <p className="text-sm sm:text-base text-gray-400 mb-5 sm:mb-6 leading-relaxed flex-grow">{categoria.descricao}</p>
+                          <div className="flex items-center gap-2 text-[#00d4ff] font-semibold text-sm sm:text-base">
+                            <span>Ver produtos</span>
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                          </div>
+                        </div>
+                      </Link>
+                  </AnimateOnScroll>
               ))}
             </div>
           </div>

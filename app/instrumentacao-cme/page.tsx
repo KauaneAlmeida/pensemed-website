@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CaixaCME } from '@/lib/types';
+import LoadingScreen from '@/components/LoadingScreen';
+import ShareDropdown from '@/components/ShareDropdown';
 
 // Componente de filtro accordion
 function FilterSection({
@@ -50,16 +52,16 @@ function CaixaCard({ caixa }: { caixa: CaixaCME }) {
   return (
     <Link
       href={`/instrumentacao-cme/${caixa.slug}`}
-      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 block"
+      className="group bg-white overflow-hidden border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 block"
     >
-      {/* Imagem */}
+      {/* Imagem - sem bordas, cobrindo todo o espaço */}
       <div className="aspect-square relative overflow-hidden bg-gray-50">
         {caixa.imagem_url ? (
           <Image
             src={caixa.imagem_url}
             alt={caixa.nome_exibicao}
             fill
-            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -140,30 +142,30 @@ function InstrumentacaoCMEContent() {
     }
   }, [busca, caixas]);
 
-  // Handler de busca com debounce usando ref para manter foco
-  const [buscaInput, setBuscaInput] = useState(busca);
+  // Refs para input não controlado - evita re-renders durante digitação
+  const inputDesktopRef = useRef<HTMLInputElement>(null);
+  const inputMobileRef = useRef<HTMLInputElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isUserTypingRef = useRef(false);
 
-  // Sincronizar input com URL apenas quando não está digitando
+  // Sincronizar inputs com URL quando busca muda externamente (ex: limpar filtros)
   useEffect(() => {
-    if (!isUserTypingRef.current && buscaInput !== busca) {
-      setBuscaInput(busca);
+    if (inputDesktopRef.current) {
+      inputDesktopRef.current.value = busca;
+    }
+    if (inputMobileRef.current) {
+      inputMobileRef.current.value = busca;
     }
   }, [busca]);
 
-  // Handler do input com debounce
+  // Handler do input com debounce - usa valor direto do DOM, sem setState
   const handleBuscaChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
-    setBuscaInput(valor);
-    isUserTypingRef.current = true;
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      isUserTypingRef.current = false;
       const params = new URLSearchParams(searchParams.toString());
       if (valor) {
         params.set('busca', valor);
@@ -171,7 +173,7 @@ function InstrumentacaoCMEContent() {
         params.delete('busca');
       }
       router.replace(`/instrumentacao-cme?${params.toString()}`, { scroll: false });
-    }, 600);
+    }, 500);
   }, [searchParams, router]);
 
   // Cleanup do timer
@@ -185,8 +187,12 @@ function InstrumentacaoCMEContent() {
 
   // Limpar filtros
   const limparFiltros = () => {
-    isUserTypingRef.current = false;
-    setBuscaInput('');
+    if (inputDesktopRef.current) {
+      inputDesktopRef.current.value = '';
+    }
+    if (inputMobileRef.current) {
+      inputMobileRef.current.value = '';
+    }
     router.push('/instrumentacao-cme');
   };
 
@@ -212,9 +218,10 @@ function InstrumentacaoCMEContent() {
       <div className="mb-6">
         <div className="relative">
           <input
+            ref={isMobile ? inputMobileRef : inputDesktopRef}
             id={isMobile ? 'busca-cme-mobile' : 'busca-cme-desktop'}
             type="text"
-            value={buscaInput}
+            defaultValue={busca}
             onChange={handleBuscaChange}
             placeholder="Buscar caixas..."
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-medical focus:border-transparent text-sm"
@@ -325,27 +332,10 @@ function InstrumentacaoCMEContent() {
 
               <div className="flex items-center gap-3">
                 {/* Botão Compartilhar - Desktop */}
-                <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: 'Instrumentação Cirúrgica CME - PenseMed',
-                        text: 'Confira nossa linha de instrumentação cirúrgica CME',
-                        url: window.location.href,
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert('Link copiado para a área de transferência!');
-                    }
-                  }}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {/* Ícone de compartilhar - seta para cima com bandeja */}
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  Compartilhar
-                </button>
+                <ShareDropdown
+                  title="Instrumentação Cirúrgica CME - PenseMed"
+                  className="hidden sm:block"
+                />
 
                 {/* Botão Filtros - Desktop/Tablet */}
                 <button
@@ -449,16 +439,7 @@ function InstrumentacaoCMEContent() {
 // Página principal com Suspense
 export default function InstrumentacaoCMEPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Carregando instrumentação CME...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen message="Carregando instrumentação CME..." />}>
       <InstrumentacaoCMEContent />
     </Suspense>
   );

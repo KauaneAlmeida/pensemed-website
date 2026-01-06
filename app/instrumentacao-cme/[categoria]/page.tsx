@@ -3,9 +3,13 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
-import { agruparInstrumentos, getBadgeVariacoes, InstrumentoAgrupado, codigoValido } from '@/lib/instrumentUtils';
+import { agruparInstrumentos, getBadgeVariacoes, InstrumentoAgrupado, codigoValido, produtoDeveSerOculto } from '@/lib/instrumentUtils';
+import { ImageGalleryCompact, GalleryImage } from '@/components/ImageGallery';
+import { getProductImages } from '@/hooks/useProductImages';
+import LoadingScreen from '@/components/LoadingScreen';
+import ShareDropdown from '@/components/ShareDropdown';
+import BackButton from '@/components/BackButton';
 
 interface Instrumento {
   id: string;
@@ -20,6 +24,13 @@ interface CaixaCME {
   nome_exibicao: string;
   slug: string;
   total_instrumentos: number;
+}
+
+// Função para corrigir erros de digitação nos nomes dos produtos
+function corrigirTexto(texto: string): string {
+  return texto
+    .replace(/BIAXO/gi, 'BAIXO')
+    .replace(/P\/BIAXO/gi, 'P/BAIXO');
 }
 
 // Componente de filtro accordion
@@ -61,58 +72,62 @@ function FilterSection({
   );
 }
 
-// Componente de busca 100% isolado - gerencia seu próprio estado interno
-// e só notifica o pai após o debounce, sem nunca perder foco
+// Componente de busca 100% isolado com estado não-controlado
+// Usa ref para manter o valor e não depende de props externas durante digitação
 function SearchInput({
   initialValue,
   onSearch,
   placeholder = "Buscar...",
   className = "mb-6",
   showClearButton = false,
+  inputId,
 }: {
   initialValue: string;
   onSearch: (value: string) => void;
   placeholder?: string;
   className?: string;
   showClearButton?: boolean;
+  inputId?: string;
 }) {
-  // Estado interno completamente isolado do pai
-  const [localValue, setLocalValue] = useState(initialValue);
+  const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSubmittedRef = useRef(initialValue);
+  const [displayValue, setDisplayValue] = useState(initialValue);
 
-  // Quando o valor inicial muda externamente (ex: limpar filtros), atualiza o estado local
-  // Mas só se for diferente do que já submetemos (evita loops)
+  // Sincroniza apenas quando limpar filtros (valor vazio vindo de fora)
   useEffect(() => {
-    if (initialValue !== lastSubmittedRef.current) {
-      setLocalValue(initialValue);
-      lastSubmittedRef.current = initialValue;
+    if (initialValue === '' && displayValue !== '') {
+      setDisplayValue('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
     }
   }, [initialValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setLocalValue(newValue);
+    setDisplayValue(newValue);
 
-    // Limpar timer anterior
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
 
-    // Debounce de 500ms antes de notificar o pai
     timerRef.current = setTimeout(() => {
-      lastSubmittedRef.current = newValue;
       onSearch(newValue);
-    }, 500);
+    }, 400);
   };
 
   const handleClear = () => {
-    setLocalValue('');
-    lastSubmittedRef.current = '';
+    setDisplayValue('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
     onSearch('');
   };
 
-  // Cleanup
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -125,11 +140,13 @@ function SearchInput({
     <div className={className}>
       <div className="relative">
         <input
+          ref={inputRef}
+          id={inputId}
           type="text"
-          value={localValue}
+          defaultValue={initialValue}
           onChange={handleChange}
           placeholder={placeholder}
-          className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-medical focus:border-transparent text-base bg-white shadow-sm ${showClearButton && localValue ? 'pr-10' : 'pr-4'}`}
+          className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-medical focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
           autoComplete="off"
           spellCheck={false}
         />
@@ -141,7 +158,7 @@ function SearchInput({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        {showClearButton && localValue && (
+        {showClearButton && displayValue && (
           <button
             onClick={handleClear}
             type="button"
@@ -157,11 +174,52 @@ function SearchInput({
   );
 }
 
-// Card de instrumento agrupado
-function InstrumentoCard({ instrumento, slugCaixa }: { instrumento: InstrumentoAgrupado; slugCaixa: string }) {
+// Card de instrumento agrupado com suporte a galeria de imagens
+function InstrumentoCard({ instrumento, slugCaixa, nomeTabela }: { instrumento: InstrumentoAgrupado; slugCaixa: string; nomeTabela: string }) {
   const whatsappLink = getWhatsAppProdutoLink(instrumento.nome);
   const primeiraVariacao = instrumento.variacoes[0] as Instrumento & { variacaoTexto?: string };
-  const imagemUrl = primeiraVariacao?.imagem_url || instrumento.imagem;
+  const imagemUrlFallback = primeiraVariacao?.imagem_url || instrumento.imagem;
+
+  // Estado para imagens da tabela de imagens
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  // Buscar imagens da tabela de imagens
+  useEffect(() => {
+    const fetchImages = async () => {
+      const productId = typeof instrumento.id === 'string' ? parseInt(instrumento.id, 10) : instrumento.id;
+
+      if (isNaN(productId)) {
+        setLoadingImages(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await getProductImages(productId, nomeTabela);
+
+        if (!error && data && data.length > 0) {
+          setImages(data.map(img => ({
+            id: img.id,
+            url: img.url,
+            ordem: img.ordem,
+            principal: img.principal,
+          })));
+        } else if (imagemUrlFallback) {
+          // Fallback para imagem_url do produto
+          setImages([{ url: imagemUrlFallback, principal: true }]);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar imagens:', err);
+        if (imagemUrlFallback) {
+          setImages([{ url: imagemUrlFallback, principal: true }]);
+        }
+      }
+
+      setLoadingImages(false);
+    };
+
+    fetchImages();
+  }, [instrumento.id, nomeTabela, imagemUrlFallback]);
 
   // Usar sempre o ID para o link - é mais confiável que códigos que podem ser base64url
   const linkId = instrumento.id;
@@ -171,16 +229,13 @@ function InstrumentoCard({ instrumento, slugCaixa }: { instrumento: InstrumentoA
       href={`/instrumentacao-cme/${slugCaixa}/${linkId}`}
       className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-medical/30 hover:shadow-lg transition-all duration-300 block"
     >
-      <div className="aspect-square relative overflow-hidden bg-gray-50">
-        {imagemUrl ? (
-          <Image
-            src={imagemUrl}
-            alt={instrumento.nome}
-            fill
-            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
-          />
+      <div className="relative">
+        {loadingImages ? (
+          <div className="aspect-square bg-gray-100 animate-pulse" />
+        ) : images.length > 0 ? (
+          <ImageGalleryCompact images={images} productName={instrumento.nome} />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="aspect-square relative overflow-hidden bg-gray-50 flex items-center justify-center">
             <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
@@ -189,7 +244,7 @@ function InstrumentoCard({ instrumento, slugCaixa }: { instrumento: InstrumentoA
 
         {/* Badge de variações */}
         {instrumento.temVariacoes && (
-          <span className="absolute top-2 left-2 px-2 py-1 bg-medical text-white text-xs font-semibold rounded-full shadow-md">
+          <span className="absolute top-2 left-2 px-2 py-1 bg-medical text-white text-xs font-semibold rounded-full shadow-md z-20">
             {getBadgeVariacoes(instrumento.variacoes.length)}
           </span>
         )}
@@ -200,7 +255,7 @@ function InstrumentoCard({ instrumento, slugCaixa }: { instrumento: InstrumentoA
             e.stopPropagation();
             window.open(whatsappLink, '_blank');
           }}
-          className="absolute bottom-2 right-2 w-10 h-10 bg-[#25D366] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-[#20bd5a] shadow-lg cursor-pointer"
+          className="absolute bottom-2 right-2 w-10 h-10 bg-[#25D366] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-[#20bd5a] shadow-lg cursor-pointer z-20"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -212,7 +267,7 @@ function InstrumentoCard({ instrumento, slugCaixa }: { instrumento: InstrumentoA
           <span className="text-medical text-xs font-medium">Cód: {instrumento.codigo}</span>
         )}
         <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mt-1 group-hover:text-medical transition-colors">
-          {instrumento.nome}
+          {corrigirTexto(instrumento.nome)}
         </h3>
         {instrumento.temVariacoes && (
           <div className="flex flex-wrap gap-1 mt-2">
@@ -281,7 +336,8 @@ function CaixaCMEContent() {
           nome: i.nome,
           codigo: i.codigo,
           descricao: i.descricao,
-          imagem_url: i.imagem_url
+          imagem: i.imagem_url, // Mapeia imagem_url para imagem (nome esperado pela interface)
+          imagem_url: i.imagem_url // Mantém também como imagem_url para compatibilidade
         })));
 
         setInstrumentosAgrupados(agrupados);
@@ -328,18 +384,6 @@ function CaixaCMEContent() {
     router.push(`/instrumentacao-cme/${categoriaSlug}`);
   };
 
-  const handleCompartilhar = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: caixa?.nome_exibicao || 'Instrumentação CME',
-        text: `Confira os instrumentos da ${caixa?.nome_exibicao}`,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copiado para a área de transferência!');
-    }
-  };
 
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className={isMobile ? '' : 'sticky top-24'}>
@@ -412,20 +456,19 @@ function CaixaCMEContent() {
   );
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-medical border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Carregando instrumentos...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Carregando instrumentos..." />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b pt-20">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <BackButton
+              fallbackUrl="/instrumentacao-cme"
+              label="Voltar"
+            />
+          </div>
           <nav className="flex items-center gap-2 text-sm">
             <Link href="/" className="text-medical hover:text-medical-dark">Início</Link>
             <span className="text-gray-400">/</span>
@@ -469,12 +512,10 @@ function CaixaCMEContent() {
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <button onClick={handleCompartilhar} className="hidden sm:flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  Compartilhar
-                </button>
+                <ShareDropdown
+                  title={caixa?.nome_exibicao || 'Instrumentação CME'}
+                  className="hidden sm:block"
+                />
 
                 <button onClick={() => setShowMobileFilters(true)} className="hidden sm:flex lg:hidden items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,8 +561,15 @@ function CaixaCMEContent() {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {instrumentosFiltrados.map((instrumento) => (
-                  <InstrumentoCard key={instrumento.id} instrumento={instrumento} slugCaixa={categoriaSlug} />
+                {instrumentosFiltrados
+                  .filter((instrumento) => !produtoDeveSerOculto(instrumento.id))
+                  .map((instrumento) => (
+                  <InstrumentoCard
+                    key={instrumento.id}
+                    instrumento={instrumento}
+                    slugCaixa={categoriaSlug}
+                    nomeTabela={caixa?.nome_tabela || ''}
+                  />
                 ))}
               </div>
             )}
@@ -543,16 +591,7 @@ function CaixaCMEContent() {
 
 export default function CaixaCMEPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 pt-24 pb-16 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-medical border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Carregando...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingScreen />}>
       <CaixaCMEContent />
     </Suspense>
   );

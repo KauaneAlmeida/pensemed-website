@@ -177,6 +177,47 @@ const TABELAS_CME = [
 ];
 
 /**
+ * Mapeamento de tabelas de produtos para suas tabelas de imagens
+ * NOTA: Este mapeamento é usado para buscar imagens das caixas na listagem
+ */
+const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
+  'afastador abdominal all path – omni tract': 'afastador_abdominal_all_path_imagens',
+  'caixa cervical translucente': 'caixa_cervical_translucente_imagens',
+  'caixa de apoio alif': 'caixa_de_apoio_alif_imagens',
+  'caixa de apoio cervical': 'caixa_de_apoio_cervical_imagens',
+  'caixa de apoio lombar': 'caixa_de_apoio_lombar_imagens',
+  'caixa endoscopia coluna': 'caixa_endoscopia_coluna_imagens',
+  'caixa baioneta mis': 'caixa_baioneta_mis_imagens',
+  'caixa intrumentacao cirurgica cranio': 'caixa_intrumentacao_cirurgica_cranio_imagens',
+  'caixa micro tesouras': 'caixa_micro_tesouras_imagens',
+  'caixa microdissectores rhoton': 'caixa_microdissectores_rhoton_imagens',
+  'kit afastadores tubulares endoscopia': 'kit_afastadores_tubulares_endoscopia_imagens',
+  'caixa apoio bucomaxilo': 'caixa_apoio_bucomaxilo_imagens',
+  'instrumental peça de mão stryker formula': 'instrumental_peca_de_mao_stryker_formula_imagens',
+  'instrumental de descompressão TOM SHIELD': 'instrumental_de_descompressao_tom_shield_imagens',
+  'instrumental cabo de fibra óptica compatível stryker': 'instrumental_cabo_de_fibra_optica_compativel_stryker_imagens',
+  // Equipamentos médicos (nomes EXATOS das tabelas no Supabase)
+  'arthrocare quantum 2 rf + pedal': 'arthrocare_quantum_2_rf_pedal_imagens',
+  'b. braun stimuplex hns12': 'b_braun_stimuplex_hns12_imagens',
+  'bomba de artroscopia flosteady 150': 'bomba_de_artroscopia_flosteady_imagens',
+  'gerador de diatermia ellman surgimax 4.0 dual rf 120 ice': 'gerador_de_diatermia_ellman_surgitron_dual_rf_120_ice_imagens',
+  'gerador de radiofrequencia multigen 4 canais': 'gerador_de_radiofrequencia_multigen_imagens',
+  'gerador de rf  para manejo da dor coolief': 'gerador_de_rf_para_manejo_da_dor_coolief_imagens',
+  'gerador rf  surgimax plus + pedal': 'gerador_rf_surgimax_plus_pedal_imagens',
+  'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
+  'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
+};
+
+/**
+ * Tabelas de imagens que usam produto_nome em vez de produto_id
+ */
+const TABELAS_COM_PRODUTO_NOME = [
+  'caixa_de_apoio_alif_imagens',
+  'caixa_de_apoio_cervical_imagens',
+  'caixa_de_apoio_lombar_imagens',
+];
+
+/**
  * Conta itens únicos em uma tabela (sem duplicados)
  * @param nomeTabela - Nome da tabela no Supabase
  * @returns Número de itens únicos
@@ -223,6 +264,80 @@ async function contarItensUnicos(nomeTabela: string): Promise<number> {
 }
 
 /**
+ * Busca a segunda imagem de uma caixa a partir da tabela de imagens
+ * Usa a segunda imagem (ordem=2) para exibir no card da listagem
+ * @param nomeTabela - Nome da tabela de produtos
+ * @returns URL da segunda imagem ou null
+ */
+async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
+  try {
+    // Verificar se existe tabela de imagens mapeada
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+    if (!tabelaImagens) {
+      console.log(`[buscarImagemDaCaixa] Sem tabela de imagens para "${nomeTabela}"`);
+      return null;
+    }
+
+    // Verificar se a tabela usa produto_nome em vez de produto_id
+    const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens);
+
+    console.log(`[buscarImagemDaCaixa] Buscando em tabela: "${tabelaImagens}" (usaProdutoNome: ${usaProdutoNome})`);
+
+    // Estratégia 1: Buscar imagem marcada como principal
+    const { data: imagemPrincipal, error: erroPrincipal } = await supabase
+      .from(tabelaImagens)
+      .select('url')
+      .eq('principal', true)
+      .order('ordem', { ascending: true })
+      .limit(1);
+
+    if (!erroPrincipal && imagemPrincipal && imagemPrincipal.length > 0 && imagemPrincipal[0]?.url) {
+      console.log(`[buscarImagemDaCaixa] Usando imagem principal: ${imagemPrincipal[0].url}`);
+      return imagemPrincipal[0].url;
+    }
+
+    // Estratégia 2: Buscar primeira imagem ordenada por ordem
+    const { data: primeiraImagem, error: erroPrimeira } = await supabase
+      .from(tabelaImagens)
+      .select('url, ordem')
+      .order('ordem', { ascending: true })
+      .limit(1);
+
+    if (!erroPrimeira && primeiraImagem && primeiraImagem.length > 0 && primeiraImagem[0]?.url) {
+      console.log(`[buscarImagemDaCaixa] Usando primeira imagem por ordem: ${primeiraImagem[0].url}`);
+      return primeiraImagem[0].url;
+    }
+
+    // Estratégia 3 (fallback): Buscar qualquer imagem
+    const { data: imagens, error } = await supabase
+      .from(tabelaImagens)
+      .select('url')
+      .limit(1);
+
+    if (error) {
+      console.error(`[buscarImagemDaCaixa] ERRO Supabase em "${tabelaImagens}":`, error.message, error.code);
+      return null;
+    }
+
+    if (!imagens || imagens.length === 0) {
+      console.log(`[buscarImagemDaCaixa] Nenhuma imagem encontrada em "${tabelaImagens}"`);
+      return null;
+    }
+
+    if (imagens[0]?.url) {
+      console.log(`[buscarImagemDaCaixa] URL selecionada: ${imagens[0].url}`);
+      return imagens[0].url;
+    }
+
+    console.log(`[buscarImagemDaCaixa] Nenhuma imagem válida em "${tabelaImagens}"`);
+    return null;
+  } catch (error) {
+    console.error(`[buscarImagemDaCaixa] Erro para "${nomeTabela}":`, error);
+    return null;
+  }
+}
+
+/**
  * Busca todas as caixas CME (cada tabela é uma caixa)
  * @returns Array de caixas com total de instrumentos (sem duplicados)
  */
@@ -256,11 +371,16 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
         const totalUnicos = await contarItensUnicos(nomeTabela);
         console.log(`[getCaixasCME] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos`);
 
-        // Usar o primeiro item para imagem
-        const primeiroItem = sampleData[0];
-        let imagemUrl = primeiroItem?.imagem_url || primeiroItem?.imagem || null;
-        if (imagemUrl === 'NULL' || imagemUrl === 'null') {
-          imagemUrl = null;
+        // Buscar imagem da tabela de imagens (1:N) - usa a segunda imagem
+        let imagemUrl = await buscarImagemDaCaixa(nomeTabela);
+
+        // Fallback: usar imagem do primeiro produto se não tiver na tabela de imagens
+        if (!imagemUrl) {
+          const primeiroItem = sampleData[0];
+          imagemUrl = primeiroItem?.imagem_url || primeiroItem?.imagem || null;
+          if (imagemUrl === 'NULL' || imagemUrl === 'null') {
+            imagemUrl = null;
+          }
         }
 
         const caixa: CaixaCME = {
@@ -579,15 +699,15 @@ export async function getInstrumentoCMEByCodigo(codigo: string): Promise<Instrum
  * IMPORTANTE: Use o nome EXATO da tabela como está no Supabase (com espaços e caracteres especiais)
  */
 const TABELAS_EQUIPAMENTOS = [
-  'stryker 5400-50 core console + pedal',
+  'arthrocare quantum 2 rf + pedal',
+  'b. braun stimuplex hns12',
   'bomba de artroscopia flosteady 150',
+  'gerador de diatermia ellman surgimax 4.0 dual rf 120 ice',
   'gerador de radiofrequencia multigen 4 canais',
   'gerador de rf  para manejo da dor coolief',
   'gerador rf  surgimax plus + pedal',
-  'gerador de diatermia ellman surgimax 4.0 dual rf 120 ice',
-  'b. braun stimuplex hns12',
-  'arthrocare quantum 2 rf + pedal',
   'laser lombar delight',
+  'stryker 5400-50 core console + pedal',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -625,11 +745,16 @@ export async function getCategoriasEquipamentos(): Promise<CategoriaEquipamento[
         const totalUnicos = await contarItensUnicos(nomeTabela);
         console.log(`[getCategoriasEquipamentos] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos`);
 
-        // Usar o primeiro item para imagem
-        const primeiroItem = sampleData[0];
-        let imagemUrl = primeiroItem?.imagem_url || primeiroItem?.imagem || null;
-        if (imagemUrl === 'NULL' || imagemUrl === 'null') {
-          imagemUrl = null;
+        // Buscar imagem da tabela de imagens (1:N)
+        let imagemUrl = await buscarImagemDaCaixa(nomeTabela);
+
+        // Fallback: usar imagem do primeiro produto se não tiver na tabela de imagens
+        if (!imagemUrl) {
+          const primeiroItem = sampleData[0];
+          imagemUrl = primeiroItem?.imagem_url || primeiroItem?.imagem || null;
+          if (imagemUrl === 'NULL' || imagemUrl === 'null') {
+            imagemUrl = null;
+          }
         }
 
         const categoria: CategoriaEquipamento = {
@@ -746,33 +871,63 @@ export async function getEquipamentoPorId(
   id: number
 ): Promise<EquipamentoMedico | null> {
   try {
-    const { data, error } = await supabase
+    console.log(`[getEquipamentoPorId] Buscando ID ${id} em "${nomeTabela}"`);
+
+    let data: any = null;
+    let error: any = null;
+    let idUsado: number = id;
+
+    // Primeiro tentar buscar por coluna 'id'
+    const resultado = await supabase
       .from(nomeTabela)
       .select('*')
       .eq('id', id)
       .single();
 
+    data = resultado.data;
+    error = resultado.error;
+
     if (error) {
-      console.error(`[getEquipamentoPorId] ERRO:`, error);
+      console.log(`[getEquipamentoPorId] Erro ao buscar por ID: ${error.message} (code: ${error.code})`);
+
+      // Se a tabela não tem coluna 'id' (erro 42703), buscar todos e usar índice
+      if (error.code === '42703') {
+        console.log(`[getEquipamentoPorId] Tabela não tem coluna id, buscando por índice...`);
+        const { data: allData, error: allError } = await supabase
+          .from(nomeTabela)
+          .select('*')
+          .order('nome', { ascending: true });
+
+        if (!allError && allData) {
+          const idxBuscado = id - 1; // ID começa em 1, índice em 0
+          if (idxBuscado >= 0 && idxBuscado < allData.length) {
+            data = allData[idxBuscado];
+            error = null;
+            idUsado = id;
+            console.log(`[getEquipamentoPorId] Encontrado por índice: ${id} -> "${data?.nome}"`);
+          }
+        }
+      }
+    }
+
+    if (error || !data) {
+      console.log(`[getEquipamentoPorId] Equipamento não encontrado`);
       return null;
     }
 
-    if (data) {
-      let imagemUrl = data.imagem_url || data.imagem || null;
-      if (imagemUrl === 'NULL' || imagemUrl === 'null') {
-        imagemUrl = null;
-      }
-      return {
-        id: data.id,
-        nome: data.nome,
-        categoria: data.categoria,
-        codigo: data.codigo || null,
-        descricao: data.descricao || null,
-        imagem_url: imagemUrl,
-      };
+    let imagemUrl = data.imagem_url || data.imagem || null;
+    if (imagemUrl === 'NULL' || imagemUrl === 'null') {
+      imagemUrl = null;
     }
 
-    return null;
+    return {
+      id: idUsado,
+      nome: data.nome,
+      categoria: data.categoria,
+      codigo: data.codigo || null,
+      descricao: data.descricao || null,
+      imagem_url: imagemUrl,
+    };
   } catch (error) {
     console.error(`[getEquipamentoPorId] ERRO FATAL:`, error);
     return null;
@@ -849,9 +1004,11 @@ export async function getTodosProdutosCatalogo(
     // Buscar de todas as tabelas CME
     for (const nomeTabela of TABELAS_CME) {
       try {
+        // IMPORTANTE: Ordenar por nome para manter consistência com busca por índice
         const { data, error } = await supabase
           .from(nomeTabela)
-          .select('*');
+          .select('*')
+          .order('nome', { ascending: true });
 
         if (error) {
           console.warn(`[getTodosProdutosCatalogo] Tabela CME "${nomeTabela}" erro:`, error.message);
@@ -884,7 +1041,8 @@ export async function getTodosProdutosCatalogo(
           }
 
           todosProdutos.push({
-            id: `cme-${nomeTabela}-${item.id || index}`,
+            // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
+            id: `cme-${nomeTabela}-${item.id ?? (index + 1)}`,
             nome: item.nome,
             codigo,
             descricao: item.descricao || null,
@@ -912,9 +1070,11 @@ export async function getTodosProdutosCatalogo(
     // Buscar de todas as tabelas de Equipamentos
     for (const nomeTabela of TABELAS_EQUIPAMENTOS) {
       try {
+        // IMPORTANTE: Ordenar por nome para manter consistência com busca por índice
         const { data, error } = await supabase
           .from(nomeTabela)
-          .select('*');
+          .select('*')
+          .order('nome', { ascending: true });
 
         if (error) {
           console.warn(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}" erro:`, error.message);
@@ -935,10 +1095,11 @@ export async function getTodosProdutosCatalogo(
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
           // Gerar código/ID para equipamentos
-          let idEquipamento = String(item.id || index);
+          // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
+          let idEquipamento = String(item.id ?? (index + 1));
 
           todosProdutos.push({
-            id: `equip-${nomeTabela}-${item.id || index}`,
+            id: `equip-${nomeTabela}-${item.id ?? (index + 1)}`,
             nome: item.nome,
             codigo: idEquipamento,
             descricao: item.descricao || null,
@@ -1120,15 +1281,18 @@ export async function getProdutosRelacionados(
 
   try {
     // 1. Buscar outros produtos da MESMA CAIXA (mais relevante)
+    // IMPORTANTE: Ordenar por nome para consistência com busca por índice
     const { data: mesmaCaixa, error: erroMesmaCaixa } = await supabase
       .from(nomeTabela)
       .select('*')
+      .order('nome', { ascending: true })
       .limit(limite + 1); // +1 para compensar se o atual estiver incluído
 
     if (!erroMesmaCaixa && mesmaCaixa) {
       mesmaCaixa.forEach((item: any, index: number) => {
         // Excluir o produto atual
-        const itemId = item.id || index;
+        // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para consistência
+        const itemId = item.id ?? (index + 1);
         if (String(itemId) === String(produtoAtualId)) return;
         if (relacionados.length >= limite) return;
 
@@ -1172,9 +1336,11 @@ export async function getProdutosRelacionados(
       for (const outraCaixa of caixasSelecionadas) {
         if (relacionados.length >= limite) break;
 
+        // IMPORTANTE: Ordenar por nome para consistência com busca por índice
         const { data, error } = await supabase
           .from(outraCaixa)
           .select('*')
+          .order('nome', { ascending: true })
           .limit(faltam);
 
         if (!error && data) {
@@ -1198,8 +1364,9 @@ export async function getProdutosRelacionados(
               }
             }
 
+            // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para consistência
             relacionados.push({
-              id: item.id || index,
+              id: item.id ?? (index + 1),
               nome: item.nome,
               codigo,
               imagem_url: imagemUrl,
@@ -1548,6 +1715,180 @@ export async function getVariacoesEquipamento(
     return variacoes;
   } catch (error) {
     console.error('[getVariacoesEquipamento] Erro:', error);
+    return [];
+  }
+}
+
+/**
+ * ========================================
+ * FUNÇÕES PARA BUSCAR PRODUTO COM IMAGENS (1:N)
+ * ========================================
+ */
+
+/**
+ * Interface para imagem de produto
+ */
+export interface ImagemProduto {
+  id: string;
+  produto_id: number;
+  url: string;
+  ordem: number;
+  principal: boolean;
+  created_at?: string;
+}
+
+/**
+ * Interface para produto com imagens
+ */
+export interface ProdutoComImagens {
+  id: number;
+  nome: string;
+  descricao: string | null;
+  codigo?: string | null;
+  categoria?: string | null;
+  imagemPrincipal: string | null;
+  galeriaDeImagens: ImagemProduto[];
+}
+
+/**
+ * Busca um produto específico com suas imagens relacionadas
+ * @param nomeTabela - Nome da tabela do produto
+ * @param produtoId - ID do produto
+ * @returns Produto com imagens ou null
+ */
+export async function getProdutoComImagens(
+  nomeTabela: string,
+  produtoId: number
+): Promise<ProdutoComImagens | null> {
+  console.log(`[getProdutoComImagens] Buscando produto ID ${produtoId} em "${nomeTabela}"`);
+
+  try {
+    // 1. Buscar dados do produto
+    const { data: produto, error: erroProduto } = await supabase
+      .from(nomeTabela)
+      .select('id, nome, descricao, codigo, categoria')
+      .eq('id', produtoId)
+      .single();
+
+    if (erroProduto || !produto) {
+      console.error('[getProdutoComImagens] Produto não encontrado:', erroProduto?.message);
+      return null;
+    }
+
+    // 2. Verificar se existe tabela de imagens para este produto
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+
+    let imagens: ImagemProduto[] = [];
+
+    if (tabelaImagens) {
+      // 3. Buscar imagens relacionadas ordenadas por "ordem"
+      const { data: imagensData, error: erroImagens } = await supabase
+        .from(tabelaImagens)
+        .select('id, produto_id, url, ordem, principal, created_at')
+        .eq('produto_id', produtoId)
+        .order('ordem', { ascending: true });
+
+      if (!erroImagens && imagensData) {
+        imagens = imagensData;
+      }
+    }
+
+    // 4. Identificar imagem principal
+    const imagemPrincipalObj = imagens.find(img => img.principal === true) || imagens[0];
+    const imagemPrincipal = imagemPrincipalObj?.url || null;
+
+    console.log(`[getProdutoComImagens] Encontradas ${imagens.length} imagens para produto ${produtoId}`);
+
+    return {
+      id: produto.id,
+      nome: produto.nome,
+      descricao: produto.descricao || null,
+      codigo: produto.codigo || null,
+      categoria: produto.categoria || null,
+      imagemPrincipal,
+      galeriaDeImagens: imagens,
+    };
+  } catch (error) {
+    console.error('[getProdutoComImagens] Erro:', error);
+    return null;
+  }
+}
+
+/**
+ * Busca múltiplos produtos com suas imagens (para listagens)
+ * @param nomeTabela - Nome da tabela do produto
+ * @param limite - Quantidade máxima de produtos
+ * @returns Array de produtos com imagem principal
+ */
+export async function getProdutosComImagemPrincipal(
+  nomeTabela: string,
+  limite: number = 20
+): Promise<ProdutoComImagens[]> {
+  console.log(`[getProdutosComImagemPrincipal] Buscando produtos em "${nomeTabela}"`);
+
+  try {
+    // 1. Buscar produtos
+    const { data: produtos, error: erroProdutos } = await supabase
+      .from(nomeTabela)
+      .select('id, nome, descricao, codigo, categoria')
+      .limit(limite);
+
+    if (erroProdutos || !produtos) {
+      console.error('[getProdutosComImagemPrincipal] Erro:', erroProdutos?.message);
+      return [];
+    }
+
+    // 2. Verificar se existe tabela de imagens
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+
+    if (!tabelaImagens) {
+      // Retorna produtos sem imagens da galeria
+      return produtos.map(p => ({
+        id: p.id,
+        nome: p.nome,
+        descricao: p.descricao || null,
+        codigo: p.codigo || null,
+        categoria: p.categoria || null,
+        imagemPrincipal: null,
+        galeriaDeImagens: [],
+      }));
+    }
+
+    // 3. Buscar todas as imagens principais de uma vez
+    const produtoIds = produtos.map(p => p.id);
+    const { data: imagensData, error: erroImagens } = await supabase
+      .from(tabelaImagens)
+      .select('id, produto_id, url, ordem, principal, created_at')
+      .in('produto_id', produtoIds)
+      .order('ordem', { ascending: true });
+
+    // 4. Criar mapa de imagens por produto
+    const imagensPorProduto = new Map<number, ImagemProduto[]>();
+    if (!erroImagens && imagensData) {
+      imagensData.forEach(img => {
+        const lista = imagensPorProduto.get(img.produto_id) || [];
+        lista.push(img);
+        imagensPorProduto.set(img.produto_id, lista);
+      });
+    }
+
+    // 5. Montar resultado
+    return produtos.map(p => {
+      const imagens = imagensPorProduto.get(p.id) || [];
+      const imagemPrincipalObj = imagens.find(img => img.principal) || imagens[0];
+
+      return {
+        id: p.id,
+        nome: p.nome,
+        descricao: p.descricao || null,
+        codigo: p.codigo || null,
+        categoria: p.categoria || null,
+        imagemPrincipal: imagemPrincipalObj?.url || null,
+        galeriaDeImagens: imagens,
+      };
+    });
+  } catch (error) {
+    console.error('[getProdutosComImagemPrincipal] Erro:', error);
     return [];
   }
 }

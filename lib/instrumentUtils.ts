@@ -1,5 +1,21 @@
 // Utilitários para agrupamento e validação de instrumentos/equipamentos
 
+/**
+ * Lista de IDs de produtos que devem ser ocultados da listagem
+ * Usado para esconder cards de "conjuntos" que são apenas títulos/agrupadores
+ */
+const PRODUTOS_OCULTOS: (string | number)[] = [
+  15001, // Instrumental de Descompressão TOM SHIELD - oculto DENTRO da página (mas imagem aparece no card principal)
+];
+
+/**
+ * Verifica se um produto deve ser ocultado da listagem
+ */
+export function produtoDeveSerOculto(id: string | number): boolean {
+  const idNumerico = typeof id === 'string' ? parseInt(id, 10) : id;
+  return PRODUTOS_OCULTOS.includes(idNumerico) || PRODUTOS_OCULTOS.includes(id);
+}
+
 export interface InstrumentoBase {
   id: string | number;
   nome: string;

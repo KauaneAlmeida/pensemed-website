@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { ImageGalleryFull, GalleryImage } from '@/components/ImageGallery';
+import { getProductImages } from '@/hooks/useProductImages';
 
 export interface VariacaoEquipamento {
   id: number;
@@ -29,6 +30,7 @@ interface EquipamentoDetalhesProps {
   categoriaSlug: string;
   descricaoCompleta: string;
   mostrarCodigo: boolean;
+  nomeTabela?: string;
 }
 
 export default function EquipamentoDetalhes({
@@ -38,11 +40,56 @@ export default function EquipamentoDetalhes({
   categoriaSlug,
   descricaoCompleta,
   mostrarCodigo,
+  nomeTabela,
 }: EquipamentoDetalhesProps) {
   const router = useRouter();
   const [variacaoSelecionada, setVariacaoSelecionada] = useState<VariacaoEquipamento | null>(
     variacoes.find(v => v.id === equipamento.id) || null
   );
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  // Buscar imagens do produto da tabela de imagens
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (!nomeTabela) {
+        setLoadingImages(false);
+        return;
+      }
+
+      const productId = variacaoSelecionada?.id || equipamento.id;
+
+      try {
+        const { data, error } = await getProductImages(productId, nomeTabela);
+        if (!error && data && data.length > 0) {
+          setImages(data.map(img => ({
+            id: img.id,
+            url: img.url,
+            ordem: img.ordem,
+            principal: img.principal,
+          })));
+        } else {
+          // Fallback para imagem_url do equipamento
+          const fallbackUrl = variacaoSelecionada?.imagem_url || equipamento.imagem_url;
+          if (fallbackUrl) {
+            setImages([{ url: fallbackUrl, principal: true }]);
+          } else {
+            setImages([]);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar imagens:', err);
+        const fallbackUrl = variacaoSelecionada?.imagem_url || equipamento.imagem_url;
+        if (fallbackUrl) {
+          setImages([{ url: fallbackUrl, principal: true }]);
+        }
+      }
+
+      setLoadingImages(false);
+    };
+
+    fetchImages();
+  }, [equipamento.id, equipamento.imagem_url, variacaoSelecionada, nomeTabela]);
 
   // Dados a exibir (da variação selecionada ou do equipamento original)
   const dadosExibicao = variacaoSelecionada || {
@@ -74,39 +121,22 @@ export default function EquipamentoDetalhes({
     ? ` (${variacaoSelecionada.variacaoTexto})`
     : '';
   const whatsappMessage = `Olá! Gostaria de informações sobre o equipamento ${codigoMsg}${nomeBase}${variacaoMsg} da categoria ${nomeExibicao}`;
-  const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Imagem */}
-        <div className="relative bg-gray-100 min-h-[400px] lg:min-h-[600px]">
-          {dadosExibicao.imagem_url ? (
-            <Image
-              src={dadosExibicao.imagem_url}
-              alt={dadosExibicao.nome}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-gray-200">
-              <svg
-                className="w-32 h-32 text-gray-400 mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              <p className="text-gray-500 text-lg">Imagem não disponível</p>
+        {/* Galeria de Imagens */}
+        <div className="p-4 lg:p-6">
+          {loadingImages ? (
+            <div className="aspect-square flex items-center justify-center bg-gray-100 rounded-lg">
+              <div className="w-10 h-10 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
             </div>
+          ) : (
+            <ImageGalleryFull
+              images={images}
+              productName={dadosExibicao.nome}
+            />
           )}
         </div>
 
@@ -207,10 +237,10 @@ export default function EquipamentoDetalhes({
             />
 
             <Link
-              href={`/equipamentos-medicos/${categoriaSlug}`}
+              href="/equipamentos-medicos"
               className="w-full text-center px-6 py-3 bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg font-semibold transition-colors duration-200"
             >
-              Voltar para {nomeExibicao}
+              Voltar para Equipamentos Médicos
             </Link>
           </div>
 

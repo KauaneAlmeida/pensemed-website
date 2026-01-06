@@ -271,10 +271,25 @@ export interface CategoriaEquipamento {
 }
 
 /**
+ * Mapeamento de nomes de exibição personalizados para tabelas
+ * Usado quando o nome padrão (convertido do nome da tabela) não é adequado
+ */
+export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
+  'afastador abdominal all path – omni tract': 'Caixa de Instrumentais – Sistema de Afastamento Abdominal All Path',
+};
+
+/**
  * Converte nome de tabela para nome de exibição
+ * Primeiro verifica se existe um nome personalizado no mapeamento
  * Ex: "caixa cervical translucente" → "Caixa Cervical Translucente"
  */
 export function tabelaToNomeExibicao(nomeTabela: string): string {
+  // Verificar se existe nome personalizado
+  if (NOMES_EXIBICAO_PERSONALIZADOS[nomeTabela]) {
+    return NOMES_EXIBICAO_PERSONALIZADOS[nomeTabela];
+  }
+
+  // Fallback: converter automaticamente
   return nomeTabela
     .split(/[_\s]+/) // Split por underscores OU espaços
     .map(palavra => palavra.charAt(0).toUpperCase() + palavra.slice(1))
