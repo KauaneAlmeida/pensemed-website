@@ -445,3 +445,92 @@ Disponível para locação com contrato flexível. Entre em contato para verific
 
   return intro + detalhesAdicionais;
 }
+
+/**
+ * ========================================
+ * TIPOS PARA OPME (Órteses, Próteses e Materiais Especiais)
+ * ========================================
+ */
+
+/**
+ * Interface para produtos OPME
+ * Tabela: produtos_opme
+ */
+export interface ProdutoOPME {
+  id: number;
+  nome: string;
+  categoria: string;
+  fabricante?: string | null;
+  registro_anvisa?: string | null;
+  descricao?: string | null;
+  aplicacao?: string | null;
+  especificacoes_tecnicas?: string | null;
+  modelos?: string | null;
+  caracteristicas?: string | null;
+  compatibilidade?: string | null;
+  esterilizacao?: string | null;
+  validade?: string | null;
+  uso_unico?: boolean | null;
+  imagem_url?: string | null;
+  created_at?: string;
+}
+
+/**
+ * Interface para listagem paginada de produtos OPME
+ */
+export interface ProdutosOPMEPaginados {
+  produtos: ProdutoOPME[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+  totalPaginas: number;
+}
+
+/**
+ * Categorias disponíveis de produtos OPME
+ */
+export const CATEGORIAS_OPME = [
+  'Pinça Bipolar',
+  'Cânula',
+  'Kit Cirúrgico',
+  'Eletrodo',
+  'Agulha',
+  'Probe',
+  'Cabo',
+  'Acessório',
+] as const;
+
+export type CategoriaOPME = typeof CATEGORIAS_OPME[number];
+
+/**
+ * Enriquece descrições de produtos OPME
+ */
+export function enriquecerDescricaoOPME(
+  descricao: string | null | undefined,
+  nomeProduto: string,
+  categoria: string
+): string {
+  const descricaoBase = descricao?.trim() || '';
+
+  // Se a descrição já é longa o suficiente, retorna como está
+  if (descricaoBase.length >= 150) {
+    return descricaoBase;
+  }
+
+  // Criar descrição enriquecida
+  const intro = descricaoBase || `${nomeProduto} - material especial para procedimentos cirúrgicos.`;
+
+  const detalhesAdicionais = `
+
+Este produto faz parte da categoria ${categoria} e atende aos mais rigorosos padrões de qualidade.
+
+Características:
+• Material de alta qualidade para uso médico
+• Atende normas ANVISA e regulamentações vigentes
+• Projetado para máxima segurança e eficácia
+• Embalagem estéril e pronta para uso
+
+Entre em contato para verificar disponibilidade e condições.`;
+
+  return intro + detalhesAdicionais;
+}

@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginados, CaixaCME, tabelaToNomeExibicao, tabelaToSlug, CategoriaEquipamento, EquipamentoMedico, EquipamentosMedicosPaginados } from './types';
+import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginados, CaixaCME, tabelaToNomeExibicao, tabelaToSlug, CategoriaEquipamento, EquipamentoMedico, EquipamentosMedicosPaginados, ProdutoOPME, ProdutosOPMEPaginados } from './types';
 import { unstable_cache } from 'next/cache';
 import { devLog, logError, CACHE_CONFIG } from './cache';
 
@@ -1958,3 +1958,141 @@ export function getEquipamentosDaTabelaCached(nomeTabela: string, pagina: number
     { revalidate: CACHE_CONFIG.PRODUTOS.revalidate, tags: ['equipamentos', nomeTabela] }
   )();
 }
+
+/**
+ * ========================================
+ * FUNÇÕES PARA OPME (Órteses, Próteses e Materiais Especiais)
+ * ========================================
+ */
+
+/**
+ * Busca todos os produtos OPME com paginação e filtros
+ */
+export async function getProdutosOPME(options: {
+  pagina?: number;
+  porPagina?: number;
+  busca?: string;
+  categoria?: string;
+} = {}): Promise<ProdutosOPMEPaginados> {
+  const { pagina = 1, porPagina = 24, busca = '', categoria = '' } = options;
+
+  console.log('[getProdutosOPME] Buscando produtos...', { pagina, porPagina, busca, categoria });
+
+  try {
+    let query = supabase
+      .from('produtos_opme')
+      .select('*', { count: 'exact' });
+
+    // Filtro por busca
+    if (busca) {
+      query = query.or(`nome.ilike.%${busca}%,descricao.ilike.%${busca}%,fabricante.ilike.%${busca}%`);
+    }
+
+    // Filtro por categoria
+    if (categoria) {
+      query = query.eq('categoria', categoria);
+    }
+
+    // Ordenação e paginação
+    const from = (pagina - 1) * porPagina;
+    const to = from + porPagina - 1;
+
+    query = query
+      .order('nome', { ascending: true })
+      .range(from, to);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('[getProdutosOPME] Erro:', error);
+      return { produtos: [], total: 0, pagina, porPagina, totalPaginas: 0 };
+    }
+
+    const total = count || 0;
+    const totalPaginas = Math.ceil(total / porPagina);
+
+    console.log(`[getProdutosOPME] Encontrados ${data?.length || 0} produtos de ${total} total`);
+
+    return {
+      produtos: data || [],
+      total,
+      pagina,
+      porPagina,
+      totalPaginas,
+    };
+  } catch (error) {
+    console.error('[getProdutosOPME] Erro inesperado:', error);
+    return { produtos: [], total: 0, pagina, porPagina, totalPaginas: 0 };
+  }
+}
+
+/**
+ * Busca um produto OPME por ID
+ */
+export async function getProdutoOPMEById(id: number): Promise<ProdutoOPME | null> {
+  console.log('[getProdutoOPMEById] Buscando produto ID:', id);
+
+  try {
+    const { data, error } = await supabase
+      .from('produtos_opme')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('[getProdutoOPMEById] Erro:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('[getProdutoOPMEById] Erro inesperado:', error);
+    return null;
+  }
+}
+
+/**
+ * Busca categorias disponíveis de produtos OPME
+ */
+export async function getCategoriasOPME(): Promise<string[]> {
+  console.log('[getCategoriasOPME] Buscando categorias...');
+
+  try {
+    const { data, error } = await supabase
+      .from('produtos_opme')
+      .select('categoria')
+      .order('categoria');
+
+    if (error) {
+      console.error('[getCategoriasOPME] Erro:', error);
+      return [];
+    }
+
+    // Extrair categorias únicas
+    const categoriasUnicas = [...new Set(data?.map(p => p.categoria).filter(Boolean) || [])];
+    console.log(`[getCategoriasOPME] Encontradas ${categoriasUnicas.length} categorias`);
+
+    return categoriasUnicas;
+  } catch (error) {
+    console.error('[getCategoriasOPME] Erro inesperado:', error);
+    return [];
+  }
+}
+
+/**
+ * Versão cacheada de getProdutosOPME
+ */
+export const getProdutosOPMECached = unstable_cache(
+  async () => getProdutosOPME({ porPagina: 100 }),
+  ['produtos-opme'],
+  { revalidate: CACHE_CONFIG.PRODUTOS.revalidate, tags: ['opme'] }
+);
+
+/**
+ * Versão cacheada de getCategoriasOPME
+ */
+export const getCategoriasOPMECached = unstable_cache(
+  async () => getCategoriasOPME(),
+  ['categorias-opme'],
+  { revalidate: CACHE_CONFIG.CATEGORIAS.revalidate, tags: ['opme-categorias'] }
+);
