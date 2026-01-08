@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getWhatsAppGenericLink } from '@/lib/whatsapp';
 
 export default function Footer() {
@@ -6,26 +7,32 @@ export default function Footer() {
 
   return (
     <footer className="relative z-10 bg-gradient-to-b from-[#09354d] to-[#072a3d] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
-          {/* Coluna 1 - Identidade */}
-          <div className="sm:col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 bg-[#205b67] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">PM</span>
-              </div>
-              <div>
-                <div className="text-white font-bold text-xl leading-tight">PenseMedical</div>
-                <div className="text-gray-400 text-xs">Tecnologia Médica</div>
-              </div>
-            </Link>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Equipamentos médicos de alta precisão para centros cirúrgicos e hospitais.
-            </p>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-14 sm:pt-10 sm:pb-16">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 items-start">
+    
+    {/* Coluna 1 - Identidade */}
+{/* Coluna 1 - Identidade */}
+<div className="sm:col-span-2 lg:col-span-1 flex flex-col items-start self-start -mt-9 sm:-mt-11 md:-mt-14">
+
+  <Link href="/" className="block">
+    <Image
+      src="/images/Logo.png"
+      alt="PenseMed - Tecnologia Médica"
+      width={220}
+      height={220}
+      priority
+className="w-[160px] sm:w-[180px] md:w-[220px] h-auto brightness-0 invert -mt-9 transform -translate-x-4 sm:-translate-x-5 md:-translate-x-6"
+    />
+  </Link>
+
+<p className="-mt-10 sm:-mt-11 md:-mt-12 text-gray-400 text-sm leading-relaxed max-w-[280px]">
+    Equipamentos médicos de alta precisão para centros cirúrgicos e hospitais.
+  </p>
+
+</div>
 
           {/* Coluna 2 - Links Rápidos */}
-          <div>
+          <div className="flex flex-col">
             <h4 className="text-base font-semibold mb-5 text-white">Links Rápidos</h4>
             <ul className="space-y-3">
               <li>
@@ -66,7 +73,7 @@ export default function Footer() {
           </div>
 
           {/* Coluna 3 - Contato */}
-          <div>
+          <div className="flex flex-col">
             <h4 className="text-base font-semibold mb-5 text-white">Contato</h4>
             <div className="space-y-3 text-sm text-gray-400">
               <div className="flex items-center gap-3">
@@ -96,7 +103,7 @@ export default function Footer() {
           </div>
 
           {/* Coluna 4 - Redes Sociais */}
-          <div>
+          <div className="flex flex-col">
             <h4 className="text-base font-semibold mb-5 text-white">Redes Sociais</h4>
             <div className="flex items-center gap-3">
               {/* Instagram */}
@@ -147,7 +154,7 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-500">
-            © 2025 PenseMedical. Todos os direitos reservados.
+            © 2025 PenseMed. Todos os direitos reservados.
           </p>
         </div>
       </div>
