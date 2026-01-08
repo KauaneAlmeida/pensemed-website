@@ -954,7 +954,7 @@ export interface ProdutoCatalogo {
   codigo: string | null;
   descricao: string | null;
   imagem_url: string | null;
-  categoria_principal: 'Instrumentação Cirúrgica CME' | 'Equipamentos Médicos';
+  categoria_principal: 'Instrumentação Cirúrgica CME' | 'Equipamentos Médicos' | 'OPME';
   caixa_tabela: string;
   caixa_nome: string;
   caixa_slug: string;
@@ -1127,6 +1127,59 @@ export async function getTodosProdutosCatalogo(
       } catch (err) {
         console.error(`[getTodosProdutosCatalogo] Erro em tabela Equip "${nomeTabela}":`, err);
       }
+    }
+
+    // Buscar produtos OPME
+    try {
+      const { data, error } = await supabase
+        .from('produtos_opme')
+        .select('*');
+
+      if (error) {
+        console.warn(`[getTodosProdutosCatalogo] Tabela OPME erro:`, error.message);
+      } else if (data && data.length > 0) {
+        console.log(`[getTodosProdutosCatalogo] Tabela OPME: ${data.length} itens`);
+
+        data.forEach((item: any, index: number) => {
+          const produtoCatalogo: ProdutoCatalogo = {
+            id: `opme-${item.id || index}`,
+            nome: item.nome || 'Produto OPME',
+            codigo: item.registro_anvisa || null,
+            descricao: item.descricao || item.aplicacao || null,
+            imagem_url: item.imagem_url || null,
+            categoria_principal: 'OPME',
+            caixa_tabela: 'produtos_opme',
+            caixa_nome: item.categoria || 'OPME',
+            caixa_slug: 'opme',
+          };
+          todosProdutos.push(produtoCatalogo);
+        });
+
+        // Contagem de categoria OPME
+        const countOPME = contagemCategorias.get('OPME') || 0;
+        contagemCategorias.set('OPME', countOPME + data.length);
+
+        // Contagem de caixas/categorias OPME
+        data.forEach((item: any) => {
+          const categoriaOPME = item.categoria || 'OPME';
+          const slugCategoria = tabelaToSlug(categoriaOPME);
+          const caixaExistente = contagemCaixas.get(slugCategoria);
+          if (caixaExistente) {
+            caixaExistente.total += 1;
+          } else {
+            contagemCaixas.set(slugCategoria, {
+              nome: categoriaOPME,
+              slug: slugCategoria,
+              categoria: 'OPME',
+              total: 1,
+            });
+          }
+        });
+      } else {
+        console.log(`[getTodosProdutosCatalogo] Tabela OPME: 0 itens`);
+      }
+    } catch (err) {
+      console.error(`[getTodosProdutosCatalogo] Erro em tabela OPME:`, err);
     }
 
     console.log(`[getTodosProdutosCatalogo] Total bruto: ${todosProdutos.length} produtos`);

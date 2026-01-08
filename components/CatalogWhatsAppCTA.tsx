@@ -9,12 +9,12 @@ export default function CatalogWhatsAppCTA({ nomeCategoria }: CatalogWhatsAppCTA
   const whatsappLink = getWhatsAppCatalogoLink(nomeCategoria);
 
   return (
-    <div className="bg-gradient-to-br from-medical-light to-blue-50 rounded-2xl p-8 md:p-12 text-center mt-16 border border-medical/10">
+    <div className="bg-gradient-to-br from-[#2a7a8a]/20 to-[#205b67]/5 rounded-2xl p-8 md:p-12 text-center mt-16 border border-[#205b67]/10">
       <div className="max-w-2xl mx-auto">
         {/* Ícone */}
         <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-6 shadow-md">
           <svg
-            className="w-8 h-8 text-medical"
+            className="w-8 h-8 text-[#205b67]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

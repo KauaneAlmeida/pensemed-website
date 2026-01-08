@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ProdutoCatalogo } from '@/lib/api';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import { codigoValido } from '@/lib/instrumentUtils';
-import { getProductImages } from '@/hooks/useProductImages';
+import { getProductImages, getOPMEProductImages } from '@/hooks/useProductImages';
 
 // Função para gerar URL do produto
 // O id composto tem formato: "tipo-nometabela-ID" (ex: "cme-caixa cervical translucente-5")
@@ -18,6 +18,8 @@ function getProductUrl(produto: ProdutoCatalogo): string {
 
   if (produto.categoria_principal === 'Equipamentos Médicos') {
     return `/equipamentos-medicos/${produto.caixa_slug}/${idNumerico}`;
+  } else if (produto.categoria_principal === 'OPME') {
+    return `/categorias/opme/${idNumerico}`;
   } else {
     return `/instrumentacao-cme/${produto.caixa_slug}/${idNumerico}`;
   }
@@ -41,19 +43,32 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
       const idString = partes[partes.length - 1];
       const productId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
 
-      if (!productId || !produto.caixa_tabela) {
+      if (!productId) {
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await getProductImages(productId, produto.caixa_tabela);
+        // Para produtos OPME, usar função específica
+        if (produto.categoria_principal === 'OPME') {
+          const { data, error } = await getOPMEProductImages(productId);
+          if (!error && data && data.length > 0) {
+            // Usa a primeira imagem (ordem = 0) ou a primeira disponível
+            const imagemPrincipal = data.find(img => img.ordem === 0) || data[0];
+            if (imagemPrincipal?.url) {
+              setImagemUrl(imagemPrincipal.url);
+            }
+          }
+        } else if (produto.caixa_tabela) {
+          // Para CME e Equipamentos, usar função padrão
+          const { data, error } = await getProductImages(productId, produto.caixa_tabela, produto.nome);
 
-        if (!error && data && data.length > 0) {
-          // Usa a imagem principal ou a primeira
-          const imagemPrincipal = data.find(img => img.principal) || data[0];
-          if (imagemPrincipal?.url) {
-            setImagemUrl(imagemPrincipal.url);
+          if (!error && data && data.length > 0) {
+            // Usa a imagem principal ou a primeira
+            const imagemPrincipal = data.find(img => img.principal) || data[0];
+            if (imagemPrincipal?.url) {
+              setImagemUrl(imagemPrincipal.url);
+            }
           }
         }
       } catch (err) {
@@ -64,7 +79,7 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
     };
 
     fetchImage();
-  }, [produto.id, produto.caixa_tabela]);
+  }, [produto.id, produto.caixa_tabela, produto.categoria_principal, produto.nome]);
 
   return (
     <Link
@@ -75,7 +90,7 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
       <div className="aspect-square relative overflow-hidden bg-white">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-[#205b67] rounded-full animate-spin" />
           </div>
         ) : imagemUrl ? (
           <Image
@@ -95,10 +110,12 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
         <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
           <span className={`px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs font-medium rounded-full ${
             produto.categoria_principal === 'Equipamentos Médicos'
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-emerald-100 text-emerald-700'
+              ? 'bg-[#2a7a8a]/15 text-[#2a7a8a]'
+              : produto.categoria_principal === 'OPME'
+              ? 'bg-purple-100 text-purple-700'
+              : 'bg-[#205b67]/15 text-[#205b67]'
           }`}>
-            {produto.categoria_principal === 'Equipamentos Médicos' ? 'Equipamento' : 'CME'}
+            {produto.categoria_principal === 'Equipamentos Médicos' ? 'Equipamento' : produto.categoria_principal === 'OPME' ? 'OPME' : 'CME'}
           </span>
         </div>
         {/* Botão WhatsApp - visível em mobile, hover em desktop */}
@@ -118,7 +135,7 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
 
       {/* Info */}
       <div className="p-2 sm:p-4">
-        <h3 className="font-semibold text-gray-900 text-xs sm:text-sm line-clamp-2 mb-0.5 sm:mb-1 group-hover:text-blue-600 transition-colors">
+        <h3 className="font-semibold text-gray-900 text-xs sm:text-sm line-clamp-2 mb-0.5 sm:mb-1 group-hover:text-[#205b67] transition-colors">
           {produto.nome}
         </h3>
         <p className="text-[10px] sm:text-xs text-gray-500 mb-1 sm:mb-2 line-clamp-1">{produto.caixa_nome}</p>

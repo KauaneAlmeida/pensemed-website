@@ -52,7 +52,7 @@ function CategoriaCard({ categoria }: { categoria: CategoriaEquipamento }) {
   return (
     <Link
       href={`/equipamentos-medicos/${categoria.slug}`}
-      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 block"
+      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-[#2a7a8a]/30 hover:shadow-lg transition-all duration-300 block"
     >
       {/* Imagem */}
       <div className="aspect-square relative overflow-hidden bg-white">
@@ -72,7 +72,7 @@ function CategoriaCard({ categoria }: { categoria: CategoriaEquipamento }) {
         )}
         {/* Badge de quantidade */}
         <div className="absolute top-2 right-2">
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#2a7a8a]/10 text-[#2a7a8a]">
             {categoria.total_itens} {categoria.total_itens === 1 ? 'item' : 'itens'}
           </span>
         </div>
@@ -80,10 +80,10 @@ function CategoriaCard({ categoria }: { categoria: CategoriaEquipamento }) {
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-emerald-600 transition-colors">
+        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-[#2a7a8a] transition-colors">
           {categoria.nome_exibicao}
         </h3>
-        <div className="flex items-center text-emerald-600 text-xs font-medium">
+        <div className="flex items-center text-[#2a7a8a] text-xs font-medium">
           <span>Ver equipamentos</span>
           <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -246,7 +246,7 @@ function EquipamentosMedicosContent() {
             <li key={categoria.slug}>
               <Link
                 href={`/equipamentos-medicos/${categoria.slug}`}
-                className="w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center text-gray-600 hover:bg-emerald-50 hover:text-emerald-700"
+                className="w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center text-gray-600 hover:bg-[#2a7a8a]/10 hover:text-[#2a7a8a]"
               >
                 <span className="truncate pr-2">{categoria.nome_exibicao}</span>
                 <span className="text-xs text-gray-400 flex-shrink-0">({categoria.total_itens})</span>
@@ -270,7 +270,7 @@ function EquipamentosMedicosContent() {
       <div className="mt-6 pt-6 border-t border-gray-200">
         <Link
           href="/catalogo?categoria=Equipamentos Médicos"
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#2a7a8a] text-white font-semibold rounded-lg hover:bg-[#205b67] transition-colors text-sm"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -283,7 +283,7 @@ function EquipamentosMedicosContent() {
       {isMobile && (
         <button
           onClick={() => setShowMobileFilters(false)}
-          className="w-full mt-4 py-3 px-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+          className="w-full mt-4 py-3 px-4 bg-[#2a7a8a] text-white font-semibold rounded-lg hover:bg-[#205b67] transition-colors"
         >
           Ver {filteredCategorias.length} categorias
         </button>
@@ -293,10 +293,10 @@ function EquipamentosMedicosContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Verde/Teal */}
-      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white pt-24 pb-12">
+      {/* Header */}
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white pt-28 sm:pt-32 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="text-sm text-emerald-200 mb-4">
+          <nav className="text-sm sm:text-base text-gray-300 mb-4">
             <Link href="/" className="hover:text-white transition-colors">
               Página Inicial
             </Link>
@@ -306,7 +306,7 @@ function EquipamentosMedicosContent() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
             Equipamentos Médicos
           </h1>
-          <p className="text-lg text-emerald-100 max-w-2xl">
+          <p className="text-lg text-gray-200 max-w-2xl">
             Equipamentos médicos hospitalares de última geração para locação, com manutenção e suporte técnico especializado.
           </p>
         </div>
@@ -373,9 +373,9 @@ function EquipamentosMedicosContent() {
             {/* Tags de filtros ativos */}
             {busca && (
               <div className="flex flex-wrap gap-2 mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#2a7a8a]/10 text-[#2a7a8a] rounded-full text-sm">
                   Busca: &quot;{busca}&quot;
-                  <button onClick={limparFiltros} className="hover:text-emerald-900">
+                  <button onClick={limparFiltros} className="hover:text-[#09354d]">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -406,7 +406,7 @@ function EquipamentosMedicosContent() {
                 <p className="text-gray-500 mb-4">Tente ajustar a busca</p>
                 <button
                   onClick={limparFiltros}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                  className="px-6 py-2 bg-[#2a7a8a] text-white rounded-lg font-medium hover:bg-[#205b67] transition-colors"
                 >
                   Limpar busca
                 </button>

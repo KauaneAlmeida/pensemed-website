@@ -25,9 +25,9 @@ export default function EquipamentoCard({ categoria }: EquipamentoCardProps) {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-gray-100">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a7a8a]/10 to-gray-100">
               <svg
-                className="w-12 h-12 text-emerald-300"
+                className="w-12 h-12 text-[#2a7a8a]/50"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -43,7 +43,7 @@ export default function EquipamentoCard({ categoria }: EquipamentoCardProps) {
           )}
 
           {/* Badge de quantidade */}
-          <div className="absolute top-2 right-2 bg-emerald-600 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+          <div className="absolute top-2 right-2 bg-[#2a7a8a] text-white text-xs font-medium px-2 py-0.5 rounded-full">
             {categoria.total_itens} itens
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function EquipamentoCard({ categoria }: EquipamentoCardProps) {
           </h3>
 
           {/* Call to Action */}
-          <div className="flex items-center justify-between text-emerald-600 text-sm font-medium">
+          <div className="flex items-center justify-between text-[#2a7a8a] text-sm font-medium">
             <span>Ver detalhes</span>
             <svg
               className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"

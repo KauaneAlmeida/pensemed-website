@@ -288,7 +288,7 @@ function CatalogoContent() {
             <button
               onClick={() => updateFilters({ categoria: '' })}
               className={`w-full text-left text-sm py-1.5 px-2 rounded transition-colors ${
-                !categoria ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                !categoria ? 'bg-[#205b67]/10 text-[#205b67] font-medium' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
               Todos os produtos
@@ -299,7 +299,7 @@ function CatalogoContent() {
               <button
                 onClick={() => updateFilters({ categoria: cat.nome, caixa: '' })}
                 className={`w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center ${
-                  categoria === cat.nome ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                  categoria === cat.nome ? 'bg-[#205b67]/10 text-[#205b67] font-medium' : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <span>{cat.nome}</span>
@@ -317,7 +317,7 @@ function CatalogoContent() {
             <button
               onClick={() => updateFilters({ caixa: '' })}
               className={`w-full text-left text-sm py-1.5 px-2 rounded transition-colors ${
-                !caixa ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                !caixa ? 'bg-[#205b67]/10 text-[#205b67] font-medium' : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
               Todas as caixas
@@ -330,7 +330,7 @@ function CatalogoContent() {
                 <button
                   onClick={() => updateFilters({ caixa: cx.slug })}
                   className={`w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center ${
-                    caixa === cx.slug ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                    caixa === cx.slug ? 'bg-[#205b67]/10 text-[#205b67] font-medium' : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   <span className="truncate pr-2">{cx.nome}</span>
@@ -355,7 +355,7 @@ function CatalogoContent() {
       {isMobile && (
         <button
           onClick={() => setShowMobileFilters(false)}
-          className="w-full mt-4 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          className="w-full mt-4 py-3 px-4 bg-[#205b67] text-white font-semibold rounded-lg hover:bg-[#2a7a8a] transition-colors"
         >
           Ver {catalogo?.total || 0} produtos
         </button>
@@ -364,10 +364,10 @@ function CatalogoContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24 pb-8 sm:pb-16">
+    <div className="min-h-screen bg-gray-50 pt-24 sm:pt-28 pb-8 sm:pb-16">
       <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+        <nav className="text-sm sm:text-base text-gray-500 mb-4 sm:mb-6 mt-2">
           <Link href="/" className="hover:text-gray-700 transition-colors">
             Página Inicial
           </Link>
@@ -457,9 +457,9 @@ function CatalogoContent() {
                   </span>
                 )}
                 {categoria && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#205b67]/10 text-[#205b67] rounded-full text-sm">
                     {categoria}
-                    <button onClick={() => updateFilters({ categoria: '', caixa: '' })} className="hover:text-emerald-900">
+                    <button onClick={() => updateFilters({ categoria: '', caixa: '' })} className="hover:text-[#184954]">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
@@ -501,7 +501,7 @@ function CatalogoContent() {
                 <p className="text-sm sm:text-base text-gray-500 mb-4">Tente ajustar os filtros ou a busca</p>
                 <button
                   onClick={limparFiltros}
-                  className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                  className="px-4 sm:px-6 py-2 bg-[#205b67] text-white rounded-lg font-medium hover:bg-[#2a7a8a] transition-colors text-sm sm:text-base"
                 >
                   Limpar filtros
                 </button>
@@ -544,7 +544,7 @@ function CatalogoContent() {
                         onClick={() => updateFilters({ pagina: String(pageNum) })}
                         className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                           pagina === pageNum
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-[#205b67] text-white'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
                       >

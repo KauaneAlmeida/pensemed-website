@@ -22,7 +22,7 @@ export default function EquipamentoItemCard({ equipamento, slugCategoria }: Equi
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-100 to-gray-200">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#2a7a8a]/15 to-gray-200">
             <svg
               className="w-20 h-20 text-gray-400"
               fill="none"
@@ -44,7 +44,7 @@ export default function EquipamentoItemCard({ equipamento, slugCategoria }: Equi
       <div className="p-5">
         {/* Codigo do Produto (só mostra se for código válido) */}
         {codigoValido(equipamento.codigo) && (
-          <p className="text-xs text-emerald-600 font-semibold mb-2">
+          <p className="text-xs text-[#2a7a8a] font-semibold mb-2">
             Cód: {equipamento.codigo}
           </p>
         )}
@@ -64,7 +64,7 @@ export default function EquipamentoItemCard({ equipamento, slugCategoria }: Equi
         {/* Botao Ver Detalhes */}
         <Link
           href={`/equipamentos-medicos/${slugCategoria}/${equipamento.id}`}
-          className="block w-full text-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors duration-200"
+          className="block w-full text-center px-4 py-2.5 bg-[#2a7a8a] hover:bg-[#205b67] text-white rounded-lg font-semibold transition-colors duration-200"
         >
           Ver Detalhes
         </Link>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { getWhatsAppGenericLink } from '@/lib/whatsapp';
 
@@ -34,34 +35,31 @@ export default function Navbar() {
     <nav
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        backgroundColor: mostrarFundo ? 'rgba(10, 26, 46, 0.95)' : 'transparent',
+        backgroundColor: mostrarFundo ? 'rgba(9, 53, 77, 0.95)' : 'transparent',
         backdropFilter: mostrarFundo ? 'blur(12px)' : 'none',
         WebkitBackdropFilter: mostrarFundo ? 'blur(12px)' : 'none',
         boxShadow: mostrarFundo ? '0 4px 30px rgba(0, 0, 0, 0.1)' : 'none',
       }}
     >
       <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-16">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-20 md:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            {/* Ícone PM */}
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              mostrarFundo ? 'bg-white/20' : 'bg-white/10'
-            } text-white`}>
-              <span className="font-bold text-lg">PM</span>
-            </div>
-            {/* Nome e subtítulo */}
-            <div className="hidden sm:block">
-              <div className="text-white font-bold text-xl leading-tight">PenseMed</div>
-              <div className="text-white/70 text-xs">Tecnologia Médica</div>
-            </div>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/images/Logo.png"
+              alt="PenseMed - Tecnologia Médica"
+              width={220}
+              height={220}
+              priority
+              className="w-[160px] sm:w-[180px] md:w-[220px] h-auto brightness-0 invert"
+            />
           </Link>
 
           {/* Navigation Links - Desktop */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
             <Link
               href="/"
-              className={`transition-colors font-medium ${
+              className={`transition-colors font-medium text-base lg:text-lg ${
                 pathname === '/' ? 'text-white' : 'text-white/80 hover:text-white'
               }`}
             >
@@ -69,7 +67,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/catalogo"
-              className={`transition-colors font-medium ${
+              className={`transition-colors font-medium text-base lg:text-lg ${
                 pathname === '/catalogo' ? 'text-white' : 'text-white/80 hover:text-white'
               }`}
             >
@@ -77,7 +75,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/equipamentos-medicos"
-              className={`transition-colors font-medium ${
+              className={`transition-colors font-medium text-base lg:text-lg ${
                 pathname.startsWith('/equipamentos') ? 'text-white' : 'text-white/80 hover:text-white'
               }`}
             >
@@ -87,7 +85,7 @@ export default function Navbar() {
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/80 hover:text-white transition-colors font-medium"
+              className="text-white/80 hover:text-white transition-colors font-medium text-base lg:text-lg"
             >
               Contato
             </a>
@@ -95,7 +93,7 @@ export default function Navbar() {
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 bg-white hover:bg-gray-100 text-medical-dark"
+              className="inline-flex items-center px-6 py-3 rounded-lg font-semibold text-base transition-all duration-200 bg-white hover:bg-gray-100 text-[#09354d]"
             >
               Solicitar Orçamento
             </a>
@@ -122,11 +120,11 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden bg-medical-dark/95 backdrop-blur-sm rounded-lg mt-2 py-4">
-            <div className="flex flex-col space-y-4">
+          <div className="md:hidden bg-[#09354d]/95 backdrop-blur-sm rounded-lg mt-2 py-5">
+            <div className="flex flex-col space-y-3">
               <Link
                 href="/"
-                className={`transition-colors font-medium px-4 py-2 ${
+                className={`transition-colors font-medium text-lg px-5 py-3 ${
                   pathname === '/' ? 'text-white' : 'text-white/80 hover:text-white'
                 }`}
                 onClick={() => setIsMenuOpen(false)}
@@ -135,7 +133,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/catalogo"
-                className={`transition-colors font-medium px-4 py-2 ${
+                className={`transition-colors font-medium text-lg px-5 py-3 ${
                   pathname === '/catalogo' ? 'text-white' : 'text-white/80 hover:text-white'
                 }`}
                 onClick={() => setIsMenuOpen(false)}
@@ -144,7 +142,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/equipamentos-medicos"
-                className={`transition-colors font-medium px-4 py-2 ${
+                className={`transition-colors font-medium text-lg px-5 py-3 ${
                   pathname.startsWith('/equipamentos') ? 'text-white' : 'text-white/80 hover:text-white'
                 }`}
                 onClick={() => setIsMenuOpen(false)}
@@ -155,7 +153,7 @@ export default function Navbar() {
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white/80 hover:text-white transition-colors font-medium px-4 py-2"
+                className="text-white/80 hover:text-white transition-colors font-medium text-lg px-5 py-3"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contato
@@ -164,7 +162,7 @@ export default function Navbar() {
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center mx-4 px-6 py-3 bg-white hover:bg-gray-100 text-medical-dark rounded-lg font-semibold text-sm transition-all duration-200"
+                className="inline-flex items-center justify-center mx-5 mt-2 px-6 py-4 bg-white hover:bg-gray-100 text-[#09354d] rounded-lg font-semibold text-base transition-all duration-200"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Solicitar Orçamento

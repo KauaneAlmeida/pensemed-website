@@ -2,12 +2,12 @@ export default function Loading() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Skeleton */}
-      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-16">
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="h-12 bg-emerald-500/50 rounded-lg w-96 mx-auto mb-4 animate-pulse" />
-            <div className="h-6 bg-emerald-500/50 rounded w-2/3 mx-auto mb-2 animate-pulse" />
-            <div className="h-5 bg-emerald-500/50 rounded w-1/2 mx-auto animate-pulse" />
+            <div className="h-12 bg-white/20 rounded-lg w-96 mx-auto mb-4 animate-pulse" />
+            <div className="h-6 bg-white/20 rounded w-2/3 mx-auto mb-2 animate-pulse" />
+            <div className="h-5 bg-white/20 rounded w-1/2 mx-auto animate-pulse" />
           </div>
         </div>
       </section>

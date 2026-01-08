@@ -168,36 +168,34 @@ export default async function EquipamentoDetailPage({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm flex-wrap">
-            <Link href="/" className="text-emerald-600 hover:text-emerald-700">
+    <div className="min-h-screen bg-white pt-20 sm:pt-24">
+      {/* Breadcrumb discreto */}
+      <div className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <nav className="flex items-center gap-2 text-sm sm:text-base text-gray-500">
+            <Link href="/" className="hover:text-gray-700 transition-colors">
               Início
             </Link>
-            <span className="text-gray-400">/</span>
+            <span>/</span>
             <Link
               href="/equipamentos-medicos"
-              className="text-emerald-600 hover:text-emerald-700"
+              className="hover:text-gray-700 transition-colors"
             >
               Equipamentos Médicos
             </Link>
-            <span className="text-gray-400">/</span>
+            <span>/</span>
             <Link
               href={`/equipamentos-medicos/${params.categoria}`}
-              className="text-emerald-600 hover:text-emerald-700"
+              className="hover:text-gray-700 transition-colors"
             >
               {nomeExibicao}
             </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600 truncate max-w-[200px]">{equipamento.nome}</span>
           </nav>
         </div>
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
         <EquipamentoDetalhes
           equipamento={{
             id: equipamento.id,
@@ -225,11 +223,11 @@ export default async function EquipamentoDetailPage({
 
       {/* Seção de Produtos Relacionados */}
       {produtosRelacionados.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-          <div className="border-t border-gray-200 pt-6 sm:pt-8 lg:pt-12">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 lg:mb-8">Produtos Relacionados</h2>
+        <div className="bg-gray-50 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Produtos Relacionados</h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               {produtosRelacionados.map((relacionado) => (
                 <ProdutoRelacionadoCard
                   key={`${relacionado.caixa_tabela}-${relacionado.id}`}
@@ -248,7 +246,7 @@ export default async function EquipamentoDetailPage({
             <div className="text-center mt-8">
               <Link
                 href={`/equipamentos-medicos/${params.categoria}`}
-                className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm"
               >
                 Ver mais equipamentos desta categoria
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

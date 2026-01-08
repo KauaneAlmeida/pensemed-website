@@ -195,8 +195,10 @@ function InstrumentoCard({ instrumento, slugCaixa, nomeTabela }: { instrumento: 
       }
 
       try {
-        // Passa productName para tabelas que usam produto_nome (ex: caixa_de_apoio_lombar_imagens)
-        const { data, error } = await getProductImages(productId, nomeTabela, instrumento.nome);
+        // Usa o nome da primeira variação (nome completo) para buscar imagens
+        // pois tabelas como caixa_de_apoio_lombar_imagens usam produto_nome com nome completo
+        const nomeParaBusca = primeiraVariacao?.nome || instrumento.nome;
+        const { data, error } = await getProductImages(productId, nomeTabela, nomeParaBusca);
 
         if (!error && data && data.length > 0) {
           setImages(data.map(img => ({
@@ -220,7 +222,7 @@ function InstrumentoCard({ instrumento, slugCaixa, nomeTabela }: { instrumento: 
     };
 
     fetchImages();
-  }, [instrumento.id, nomeTabela, imagemUrlFallback]);
+  }, [instrumento.id, nomeTabela, imagemUrlFallback, primeiraVariacao?.nome, instrumento.nome]);
 
   // Usar sempre o ID para o link - é mais confiável que códigos que podem ser base64url
   const linkId = instrumento.id;
@@ -484,7 +486,7 @@ function CaixaCMEContent() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{caixa?.nome_exibicao}</h1>
-            <p className="text-blue-100">{totalOriginal} {totalOriginal === 1 ? 'instrumento' : 'instrumentos'} disponíveis</p>
+            <p className="text-white/80">{totalOriginal} {totalOriginal === 1 ? 'instrumento' : 'instrumentos'} disponíveis</p>
           </div>
         </div>
       </section>

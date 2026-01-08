@@ -33,6 +33,9 @@ interface InstrumentoDetalhesProps {
   nomeTabela?: string;
 }
 
+// Tipo para as tabs
+type TabType = 'detalhes' | 'especificacoes';
+
 export default function InstrumentoDetalhes({
   instrumento,
   variacoes,
@@ -48,6 +51,7 @@ export default function InstrumentoDetalhes({
   );
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loadingImages, setLoadingImages] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('detalhes');
 
   // Buscar imagens do produto da tabela de imagens
   useEffect(() => {
@@ -61,7 +65,6 @@ export default function InstrumentoDetalhes({
       const productName = variacaoSelecionada?.nome || instrumento.nome;
 
       try {
-        // Passa productName para tabelas que usam produto_nome (ex: caixa_de_apoio_lombar_imagens)
         const { data, error } = await getProductImages(productId, nomeTabela, productName);
         if (!error && data && data.length > 0) {
           setImages(data.map(img => ({
@@ -71,7 +74,6 @@ export default function InstrumentoDetalhes({
             principal: img.principal,
           })));
         } else {
-          // Fallback para imagem_url do instrumento
           const fallbackUrl = variacaoSelecionada?.imagem_url || instrumento.imagem_url;
           if (fallbackUrl) {
             setImages([{ url: fallbackUrl, principal: true }]);
@@ -91,7 +93,7 @@ export default function InstrumentoDetalhes({
     };
 
     fetchImages();
-  }, [instrumento.id, instrumento.imagem_url, variacaoSelecionada, nomeTabela]);
+  }, [instrumento.id, instrumento.imagem_url, instrumento.nome, variacaoSelecionada, nomeTabela]);
 
   // Dados a exibir (da variação selecionada ou do instrumento original)
   const dadosExibicao = variacaoSelecionada || {
@@ -111,7 +113,6 @@ export default function InstrumentoDetalhes({
 
   const handleVariacaoClick = (variacao: Variacao) => {
     setVariacaoSelecionada(variacao);
-    // Navegar para a URL da variação (soft navigation, replace para não poluir histórico)
     router.replace(`/instrumentacao-cme/${categoriaSlug}/${variacao.id}`, { scroll: false });
   };
 
@@ -125,193 +126,239 @@ export default function InstrumentoDetalhes({
   const whatsappMessage = `Olá! Gostaria de informações sobre o instrumento ${codigoMsg}${nomeBase}${variacaoMsg} da ${nomeExibicao}`;
   const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
 
+  // Specs rápidas
+  const quickSpecs = [
+    mostrarCodigo && dadosExibicao.codigo && dadosExibicao.codigo.length < 20 && {
+      icon: 'tag',
+      label: 'Código',
+      value: dadosExibicao.codigo
+    },
+    { icon: 'folder', label: 'Categoria', value: nomeExibicao },
+  ].filter(Boolean) as { icon: string; label: string; value: string }[];
+
+  // Ícones para specs
+  const SpecIcon = ({ type }: { type: string }) => {
+    switch (type) {
+      case 'tag':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+        );
+      case 'folder':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Verifica se tem conteúdo para tabs
+  const hasDescricao = dadosExibicao.descricao || descricaoCompleta;
+
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-visible">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
-        {/* Galeria de Imagens */}
-        <div className="p-3 sm:p-4 lg:p-6">
-          {loadingImages ? (
-            <div className="aspect-square bg-gray-100 animate-pulse rounded-lg" />
-          ) : images.length > 0 ? (
-            <ImageGalleryFull
-              images={images}
-              productName={dadosExibicao.nome}
-            />
-          ) : (
-            <div className="aspect-square relative bg-gray-100 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-gray-200 rounded-lg">
-              <svg
-                className="w-20 h-20 sm:w-32 sm:h-32 text-gray-400 mb-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                />
-              </svg>
-              <p className="text-gray-500 text-base sm:text-lg">Imagem não disponível</p>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+
+      {/* ========== COLUNA ESQUERDA: APENAS IMAGEM ========== */}
+      <div className="lg:sticky lg:top-28 lg:self-start">
+        {loadingImages ? (
+          <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse rounded-2xl" />
+        ) : images.length > 0 ? (
+          <ImageGalleryFull
+            images={images}
+            productName={dadosExibicao.nome}
+          />
+        ) : (
+          <div className="aspect-square relative bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center rounded-2xl">
+            <svg
+              className="w-24 h-24 text-gray-300 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+              />
+            </svg>
+            <p className="text-gray-400 text-sm">Imagem não disponível</p>
+          </div>
+        )}
+      </div>
+
+      {/* ========== COLUNA DIREITA: INFORMAÇÕES ========== */}
+      <div className="flex flex-col">
+
+        {/* Badge de categoria (discreto) */}
+        <span className="inline-flex self-start px-3 py-1 bg-[#205b67]/10 text-[#205b67] rounded-full text-xs font-medium mb-4">
+          {nomeExibicao}
+        </span>
+
+        {/* Nome do produto */}
+        <h1 className="text-2xl sm:text-3xl lg:text-[28px] font-bold text-gray-900 leading-tight mb-2">
+          {nomeBase}
+        </h1>
+
+        {/* Subtítulo: Instrumentação CME • Categoria */}
+        <p className="text-sm text-gray-500 mb-6">
+          Instrumentação CME • {nomeExibicao}
+        </p>
+
+        {/* SELETOR DE VARIAÇÕES */}
+        {variacoes.length > 1 && (
+          <div className="mb-6">
+            <p className="text-sm font-medium text-gray-700 mb-3">
+              Selecione a variação:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {variacoes.map((variacao) => (
+                <button
+                  key={variacao.id}
+                  onClick={() => handleVariacaoClick(variacao)}
+                  className={`
+                    px-3 py-1.5 rounded-lg border font-medium transition-all duration-200 text-sm
+                    ${variacaoSelecionada?.id === variacao.id
+                      ? 'border-[#205b67] bg-[#205b67]/10 text-[#205b67]'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }
+                  `}
+                >
+                  {variacao.variacaoTexto}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Descrição curta (resumo) */}
+        {hasDescricao && (
+          <p className="text-[15px] text-gray-600 leading-relaxed mb-6 line-clamp-3">
+            {dadosExibicao.descricao || descricaoCompleta}
+          </p>
+        )}
+
+        {/* Especificações Rápidas - Grid compacto */}
+        {quickSpecs.length > 0 && (
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mb-8 pb-8 border-b border-gray-100">
+            {quickSpecs.map((spec, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <SpecIcon type={spec.icon} />
+                <span className="text-gray-500">{spec.label}:</span>
+                <span className="font-medium text-gray-900">{spec.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Disponibilidade */}
+        <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl mb-6">
+          <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-green-900 text-sm">Disponível para locação</p>
+            <p className="text-xs text-green-700">Entre em contato para verificar</p>
+          </div>
         </div>
 
-        {/* Informações */}
-        <div className="p-4 sm:p-6 lg:p-8">
-          {/* Código - só mostra se for válido */}
-          {mostrarCodigo && dadosExibicao.codigo && dadosExibicao.codigo.length < 20 && (
-            <div className="inline-block px-4 py-2 bg-blue-50 text-medical rounded-lg font-semibold mb-4">
-              Código: {dadosExibicao.codigo}
+        {/* CTAs */}
+        <div className="flex flex-col gap-3">
+          <WhatsAppButton
+            href={whatsappUrl}
+            label="Solicitar Informações via WhatsApp"
+            className="w-full text-center justify-center py-3.5"
+          />
+          <Link
+            href={`/instrumentacao-cme/${categoriaSlug}`}
+            className="w-full text-center px-6 py-3 text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-xl font-medium transition-colors text-sm"
+          >
+            Voltar para {nomeExibicao}
+          </Link>
+        </div>
+
+        {/* ========== TABS DE INFORMAÇÕES DETALHADAS ========== */}
+        {hasDescricao && (
+          <div className="mt-10 pt-10 border-t border-gray-100">
+
+            {/* Tab Headers */}
+            <div className="flex gap-1 border-b border-gray-200 mb-6">
+              <button
+                onClick={() => setActiveTab('detalhes')}
+                className={`px-5 py-3 text-sm font-medium transition-colors relative
+                  ${activeTab === 'detalhes'
+                    ? 'text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Detalhes
+                {activeTab === 'detalhes' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('especificacoes')}
+                className={`px-5 py-3 text-sm font-medium transition-colors relative
+                  ${activeTab === 'especificacoes'
+                    ? 'text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Informações
+                {activeTab === 'especificacoes' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+                )}
+              </button>
             </div>
-          )}
 
-          {/* Título - Nome base do instrumento */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 break-words">
-            {nomeBase}
-          </h1>
+            {/* Tab Content */}
+            <div>
 
-          {/* Subtítulo - Categoria */}
-          <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
-            {nomeExibicao}
-          </p>
+              {/* Tab: Detalhes */}
+              {activeTab === 'detalhes' && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">Descrição</h3>
+                    <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                      {dadosExibicao.descricao || descricaoCompleta}
+                    </p>
+                  </div>
+                </div>
+              )}
 
-          {/* SELETOR DE VARIAÇÕES */}
-          {variacoes.length > 1 && (
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
-                Selecione a variação:
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {variacoes.map((variacao) => (
-                  <button
-                    key={variacao.id}
-                    onClick={() => handleVariacaoClick(variacao)}
-                    className={`
-                      px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border-2 font-medium transition-all duration-200 text-sm sm:text-base
-                      ${variacaoSelecionada?.id === variacao.id
-                        ? 'border-medical bg-blue-50 text-medical'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-medical/50'
-                      }
-                    `}
-                  >
-                    {variacao.variacaoTexto}
-                  </button>
-                ))}
-              </div>
-
-              {/* Info da variação selecionada */}
-              {variacaoSelecionada && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Variação selecionada:</span>{' '}
-                    <span className="text-medical font-semibold">{variacaoSelecionada.variacaoTexto}</span>
-                  </p>
+              {/* Tab: Informações */}
+              {activeTab === 'especificacoes' && (
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 mb-4">Informações Importantes</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3 text-sm text-gray-600">
+                      <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>Processamento em CME certificado</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-gray-600">
+                      <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>Instrumentais esterilizados e prontos para uso</span>
+                    </li>
+                    <li className="flex items-start gap-3 text-sm text-gray-600">
+                      <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span>Garantia de qualidade e segurança</span>
+                    </li>
+                  </ul>
                 </div>
               )}
             </div>
-          )}
-
-          {/* Descrição */}
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Descrição</h2>
-            <div className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
-              {dadosExibicao.descricao || descricaoCompleta}
-            </div>
           </div>
-
-          {/* Disponibilidade */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 mb-6 sm:mb-8">
-            <div className="flex items-center gap-3">
-              <svg
-                className="w-6 h-6 text-green-600"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                <p className="font-semibold text-green-900">
-                  Disponível para locação
-                </p>
-                <p className="text-sm text-green-700">
-                  Entre em contato para verificar disponibilidade
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Botões de Ação */}
-          <div className="flex flex-col gap-4">
-            <WhatsAppButton
-              href={whatsappUrl}
-              label="Solicitar Informações via WhatsApp"
-              className="w-full text-center justify-center"
-            />
-
-            <Link
-              href={`/instrumentacao-cme/${categoriaSlug}`}
-              className="w-full text-center px-4 sm:px-6 py-2.5 sm:py-3 bg-white text-medical border-2 border-medical hover:bg-medical hover:text-white rounded-lg font-semibold transition-colors duration-200 text-sm sm:text-base"
-            >
-              Voltar para {nomeExibicao}
-            </Link>
-          </div>
-
-          {/* Informações Adicionais */}
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
-              Informações Importantes
-            </h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 text-medical mt-0.5 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>Processamento em CME certificado</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 text-medical mt-0.5 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>Instrumentais esterilizados e prontos para uso</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 text-medical mt-0.5 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>Garantia de qualidade e segurança</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

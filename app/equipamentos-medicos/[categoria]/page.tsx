@@ -138,7 +138,7 @@ function SearchInput({
           defaultValue={initialValue}
           onChange={handleChange}
           placeholder={placeholder}
-          className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
+          className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2a7a8a] focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
           autoComplete="off"
           spellCheck={false}
         />
@@ -175,7 +175,7 @@ function EquipamentoCard({ equipamento, slugCategoria }: { equipamento: Instrume
   return (
     <Link
       href={`/equipamentos-medicos/${slugCategoria}/${equipamento.id}`}
-      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-emerald-200 hover:shadow-lg transition-all duration-300 block"
+      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-[#2a7a8a]/30 hover:shadow-lg transition-all duration-300 block"
     >
       <div className="aspect-square relative overflow-hidden bg-white">
         {imagemUrl ? (
@@ -195,7 +195,7 @@ function EquipamentoCard({ equipamento, slugCategoria }: { equipamento: Instrume
 
         {/* Badge de variações */}
         {equipamento.temVariacoes && (
-          <span className="absolute top-2 left-2 px-2 py-1 bg-emerald-600 text-white text-xs font-semibold rounded-full shadow-md">
+          <span className="absolute top-2 left-2 px-2 py-1 bg-[#2a7a8a] text-white text-xs font-semibold rounded-full shadow-md">
             {getBadgeVariacoes(equipamento.variacoes.length)}
           </span>
         )}
@@ -215,9 +215,9 @@ function EquipamentoCard({ equipamento, slugCategoria }: { equipamento: Instrume
       </div>
       <div className="p-4">
         {equipamento.codigo && (
-          <span className="text-emerald-600 text-xs font-medium">Cód: {equipamento.codigo}</span>
+          <span className="text-[#2a7a8a] text-xs font-medium">Cód: {equipamento.codigo}</span>
         )}
-        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mt-1 group-hover:text-emerald-600 transition-colors">
+        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mt-1 group-hover:text-[#2a7a8a] transition-colors">
           {equipamento.nome}
         </h3>
         {equipamento.temVariacoes && (
@@ -356,7 +356,7 @@ function CategoriaEquipamentoContent() {
       )}
 
       <div className="mb-6">
-        <Link href="/equipamentos-medicos" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm">
+        <Link href="/equipamentos-medicos" className="inline-flex items-center gap-2 text-[#2a7a8a] hover:text-[#205b67] font-medium text-sm">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -370,7 +370,7 @@ function CategoriaEquipamentoContent() {
         <ul className="space-y-1 max-h-64 overflow-y-auto">
           {outrasCategorias.slice(0, 15).map((cat) => (
             <li key={cat.slug}>
-              <Link href={`/equipamentos-medicos/${cat.slug}`} className="block text-sm py-1.5 px-2 rounded text-gray-600 hover:bg-gray-50 hover:text-emerald-600 transition-colors truncate">
+              <Link href={`/equipamentos-medicos/${cat.slug}`} className="block text-sm py-1.5 px-2 rounded text-gray-600 hover:bg-gray-50 hover:text-[#2a7a8a] transition-colors truncate">
                 {cat.nome_exibicao}
                 <span className="text-xs text-gray-400 ml-1">({cat.total_itens})</span>
               </Link>
@@ -378,7 +378,7 @@ function CategoriaEquipamentoContent() {
           ))}
           {outrasCategorias.length > 15 && (
             <li>
-              <Link href="/equipamentos-medicos" className="block text-sm py-1.5 px-2 text-emerald-600 hover:text-emerald-700 font-medium">
+              <Link href="/equipamentos-medicos" className="block text-sm py-1.5 px-2 text-[#2a7a8a] hover:text-[#205b67] font-medium">
                 Ver todas as categorias →
               </Link>
             </li>
@@ -393,7 +393,7 @@ function CategoriaEquipamentoContent() {
       )}
 
       <div className="mt-6 pt-4 border-t border-gray-200">
-        <Link href="/catalogo" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm">
+        <Link href="/catalogo" className="inline-flex items-center gap-2 text-[#2a7a8a] hover:text-[#205b67] font-medium text-sm">
           Ver catálogo completo
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -402,7 +402,7 @@ function CategoriaEquipamentoContent() {
       </div>
 
       {isMobile && (
-        <button onClick={() => setShowMobileFilters(false)} className="w-full mt-4 py-3 px-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+        <button onClick={() => setShowMobileFilters(false)} className="w-full mt-4 py-3 px-4 bg-[#2a7a8a] text-white font-semibold rounded-lg hover:bg-[#205b67] transition-colors">
           Ver {equipamentosFiltrados.length} equipamentos
         </button>
       )}
@@ -424,20 +424,20 @@ function CategoriaEquipamentoContent() {
             />
           </div>
           <nav className="flex items-center gap-2 text-sm">
-            <Link href="/" className="text-emerald-600 hover:text-emerald-700">Início</Link>
+            <Link href="/" className="text-[#2a7a8a] hover:text-[#205b67]">Início</Link>
             <span className="text-gray-400">/</span>
-            <Link href="/equipamentos-medicos" className="text-emerald-600 hover:text-emerald-700">Equipamentos Médicos</Link>
+            <Link href="/equipamentos-medicos" className="text-[#2a7a8a] hover:text-[#205b67]">Equipamentos Médicos</Link>
             <span className="text-gray-400">/</span>
             <span className="text-gray-600">{categoria?.nome_exibicao}</span>
           </nav>
         </div>
       </div>
 
-      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-10">
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white py-10">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{categoria?.nome_exibicao}</h1>
-            <p className="text-emerald-100">{totalOriginal} {totalOriginal === 1 ? 'equipamento disponível' : 'equipamentos disponíveis'}</p>
+            <p className="text-white/80">{totalOriginal} {totalOriginal === 1 ? 'equipamento disponível' : 'equipamentos disponíveis'}</p>
           </div>
         </div>
       </section>
@@ -464,7 +464,7 @@ function CategoriaEquipamentoContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
                   Filtros
-                  {busca && <span className="ml-1 w-5 h-5 bg-emerald-600 text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>}
+                  {busca && <span className="ml-1 w-5 h-5 bg-[#2a7a8a] text-white rounded-full text-xs flex items-center justify-center font-bold">1</span>}
                 </button>
 
                 <button onClick={() => setShowMobileFilters(true)} className="sm:hidden flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
@@ -478,9 +478,9 @@ function CategoriaEquipamentoContent() {
 
             {busca && (
               <div className="flex flex-wrap gap-2 mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#2a7a8a]/10 text-[#2a7a8a] rounded-full text-sm">
                   Busca: &quot;{busca}&quot;
-                  <button onClick={limparFiltros} className="hover:text-emerald-900">
+                  <button onClick={limparFiltros} className="hover:text-[#205b67]">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -496,7 +496,7 @@ function CategoriaEquipamentoContent() {
                 </svg>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum equipamento encontrado</h3>
                 <p className="text-gray-500 mb-4">Tente ajustar a busca</p>
-                <button onClick={limparFiltros} className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors">
+                <button onClick={limparFiltros} className="px-6 py-2 bg-[#2a7a8a] text-white rounded-lg font-medium hover:bg-[#205b67] transition-colors">
                   Limpar busca
                 </button>
               </div>

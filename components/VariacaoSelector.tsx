@@ -67,9 +67,9 @@ export default function VariacaoSelector({
       title: 'text-medical',
     },
     emerald: {
-      selected: 'border-emerald-600 bg-emerald-50 text-emerald-700',
-      hover: 'hover:border-emerald-300',
-      title: 'text-emerald-600',
+      selected: 'border-[#2a7a8a] bg-[#2a7a8a]/10 text-[#2a7a8a]',
+      hover: 'hover:border-[#2a7a8a]/50',
+      title: 'text-[#2a7a8a]',
     },
   };
 
@@ -139,7 +139,7 @@ export function VariacaoChips({
       normal: 'bg-gray-100 text-gray-600',
     },
     emerald: {
-      selected: 'bg-emerald-600 text-white',
+      selected: 'bg-[#2a7a8a] text-white',
       normal: 'bg-gray-100 text-gray-600',
     },
   };

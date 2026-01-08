@@ -226,7 +226,7 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
 
             {/* Preço de Referência */}
             {produto.preco_referencia && (
-              <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="mb-8 bg-[#205b67]/10 border border-[#205b67]/20 rounded-lg p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-2">
                   Preço de Referência
                 </h2>
@@ -240,7 +240,7 @@ export default async function ProdutoPage({ params }: ProdutoPageProps) {
             )}
 
             {/* CTA Final */}
-            <div className="bg-gradient-to-br from-medical-light to-blue-50 rounded-xl p-8 text-center">
+            <div className="bg-gradient-to-br from-[#2a7a8a]/20 to-[#205b67]/5 rounded-xl p-8 text-center">
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Interessado neste produto?
               </h3>

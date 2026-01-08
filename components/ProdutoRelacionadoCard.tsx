@@ -57,9 +57,9 @@ export default function ProdutoRelacionadoCard({
   }, [id, caixaTabela]);
 
   const baseUrl = tipo === 'equipamentos' ? '/equipamentos-medicos' : '/instrumentacao-cme';
-  const hoverColor = tipo === 'equipamentos' ? 'hover:border-emerald-200' : 'hover:border-blue-200';
-  const textHoverColor = tipo === 'equipamentos' ? 'group-hover:text-emerald-600' : 'group-hover:text-blue-600';
-  const spinnerColor = tipo === 'equipamentos' ? 'border-t-emerald-500' : 'border-t-blue-500';
+  const hoverColor = tipo === 'equipamentos' ? 'hover:border-[#2a7a8a]/30' : 'hover:border-[#205b67]/30';
+  const textHoverColor = tipo === 'equipamentos' ? 'group-hover:text-[#2a7a8a]' : 'group-hover:text-[#205b67]';
+  const spinnerColor = tipo === 'equipamentos' ? 'border-t-[#2a7a8a]' : 'border-t-[#205b67]';
 
   return (
     <Link

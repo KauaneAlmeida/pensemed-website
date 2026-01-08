@@ -4,22 +4,88 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProdutoOPME } from '@/lib/types';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import { ImageGalleryFull, GalleryImage } from '@/components/ImageGallery';
+import { getOPMEProductImages, OPMEImage } from '@/hooks/useProductImages';
+
+// Card de produto relacionado - seguindo padrão do CME (fundo branco)
+function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME }) {
+  const [imagemUrl, setImagemUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getOPMEProductImages(produto.id).then(({ data }) => {
+      if (data && data.length > 0) {
+        // Filtrar apenas imagens com ordem 0 (principal) e pegar a mais recente (maior ID)
+        const imagensOrdem0 = data.filter(img => img.ordem === 0);
+        const principal = imagensOrdem0.length > 0
+          ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
+          : data.reduce((a, b) => a.id > b.id ? a : b);
+        setImagemUrl(principal.url);
+      }
+      setLoading(false);
+    });
+  }, [produto.id]);
+
+  return (
+    <Link
+      href={`/categorias/opme/${produto.id}`}
+      className="group bg-white rounded-lg sm:rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
+    >
+      {/* Imagem - fundo branco igual ao CME */}
+      <div className="aspect-square relative bg-white">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+          </div>
+        ) : imagemUrl ? (
+          <Image
+            src={imagemUrl}
+            alt={produto.nome}
+            fill
+            className="object-contain p-2 sm:p-3 group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-2 sm:p-4">
+        <h3 className="font-medium text-xs sm:text-sm text-gray-900 line-clamp-2 group-hover:text-gray-600 transition-colors">
+          {produto.nome}
+        </h3>
+        {produto.categoria && (
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 line-clamp-1">{produto.categoria}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 // Componente de loading
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+    <div className="min-h-screen bg-white pt-20 sm:pt-24">
+      <div className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="h-4 bg-gray-100 rounded w-1/3 animate-pulse"></div>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/3 mb-8"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="aspect-square bg-gray-200 rounded-lg"></div>
-            <div className="space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-12 bg-emerald-200 rounded w-1/2"></div>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="aspect-square bg-gray-100 rounded-lg animate-pulse"></div>
+          <div className="space-y-6">
+            <div className="h-6 bg-gray-100 rounded w-24 animate-pulse"></div>
+            <div className="h-10 bg-gray-100 rounded w-3/4 animate-pulse"></div>
+            <div className="h-4 bg-gray-100 rounded w-1/3 animate-pulse"></div>
+            <div className="h-20 bg-gray-100 rounded animate-pulse"></div>
+            <div className="h-12 bg-gray-100 rounded w-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -27,28 +93,8 @@ function LoadingSkeleton() {
   );
 }
 
-// Componente para seção de informações
-function InfoSection({
-  title,
-  content,
-  icon
-}: {
-  title: string;
-  content: string | null | undefined;
-  icon: React.ReactNode;
-}) {
-  if (!content) return null;
-
-  return (
-    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="text-emerald-600">{icon}</div>
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      </div>
-      <p className="text-gray-600 whitespace-pre-line">{content}</p>
-    </div>
-  );
-}
+// Tipo para as tabs
+type TabType = 'detalhes' | 'informacoes';
 
 export default function OPMEDetailPage({
   params
@@ -56,28 +102,73 @@ export default function OPMEDetailPage({
   params: { id: string }
 }) {
   const [produto, setProduto] = useState<ProdutoOPME | null>(null);
+  const [produtosRelacionados, setProdutosRelacionados] = useState<ProdutoOPME[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('detalhes');
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
 
   useEffect(() => {
-    const fetchProduto = async () => {
+    const fetchData = async () => {
       try {
+        // Buscar produto
         const response = await fetch(`/api/opme/${params.id}`);
-
         if (!response.ok) {
           throw new Error('Produto não encontrado');
         }
-
         const data = await response.json();
         setProduto(data);
+
+        // Buscar imagens do produto
+        const productId = parseInt(params.id, 10);
+        const { data: imagesData } = await getOPMEProductImages(productId);
+        if (imagesData && imagesData.length > 0) {
+          // Remover duplicatas: manter apenas uma imagem por ordem (a mais recente)
+          const imagensPorOrdem = new Map<number, typeof imagesData[0]>();
+          imagesData.forEach(img => {
+            const existente = imagensPorOrdem.get(img.ordem);
+            // Manter a mais recente (maior ID)
+            if (!existente || img.id > existente.id) {
+              imagensPorOrdem.set(img.ordem, img);
+            }
+          });
+
+          // Converter para array e ordenar por ordem
+          const imagensUnicas = Array.from(imagensPorOrdem.values())
+            .sort((a, b) => a.ordem - b.ordem)
+            .slice(0, 2); // Limitar a 2 imagens
+
+          setImages(imagensUnicas.map(img => ({
+            id: String(img.id),
+            url: img.url,
+            ordem: img.ordem,
+            principal: img.ordem === 0,
+          })));
+        }
+        setLoadingImages(false);
+
+        // Buscar produtos relacionados (mesma categoria)
+        if (data.categoria) {
+          const relResponse = await fetch(`/api/opme?categoria=${encodeURIComponent(data.categoria)}&porPagina=5`);
+          if (relResponse.ok) {
+            const relData = await relResponse.json();
+            // Filtrar o produto atual
+            const relacionados = (relData.produtos || []).filter(
+              (p: ProdutoOPME) => p.id !== data.id
+            ).slice(0, 4);
+            setProdutosRelacionados(relacionados);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar produto');
+        setLoadingImages(false);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduto();
+    fetchData();
   }, [params.id]);
 
   if (loading) {
@@ -86,7 +177,7 @@ export default function OPMEDetailPage({
 
   if (error || !produto) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+      <div className="min-h-screen bg-white pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-16">
             <div className="text-6xl mb-4">😕</div>
@@ -94,7 +185,7 @@ export default function OPMEDetailPage({
             <p className="text-gray-600 mb-6">O produto que você está procurando não existe ou foi removido.</p>
             <Link
               href="/categorias/opme"
-              className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -108,219 +199,334 @@ export default function OPMEDetailPage({
   }
 
   // Gerar mensagem para WhatsApp
-  const mensagemWhatsApp = encodeURIComponent(
-    `Olá! Tenho interesse no produto OPME:\n\n` +
-    `*${produto.nome}*\n` +
-    `Categoria: ${produto.categoria || 'N/A'}\n` +
-    (produto.fabricante ? `Fabricante: ${produto.fabricante}\n` : '') +
-    (produto.registro_anvisa ? `Registro ANVISA: ${produto.registro_anvisa}\n` : '') +
-    `\nGostaria de mais informações sobre disponibilidade e valores.`
-  );
+  const whatsappMessage = `Olá! Gostaria de informações sobre o produto OPME: ${produto.nome}${produto.categoria ? ` (${produto.categoria})` : ''}${produto.registro_anvisa ? ` - ANVISA: ${produto.registro_anvisa}` : ''}`;
+  const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
 
-  const whatsappLink = `https://wa.me/5511999999999?text=${mensagemWhatsApp}`;
+  // Verifica se tem conteúdo para detalhes (descrição, aplicação, especificações, etc.)
+  const hasDescricaoOuAplicacao = produto.descricao || produto.aplicacao || produto.especificacoes_tecnicas || produto.modelos || produto.caracteristicas || produto.compatibilidade;
+
+  // Specs rápidas para exibição compacta
+  const quickSpecs = [
+    produto.fabricante && { icon: 'building', label: 'Fabricante', value: produto.fabricante },
+    produto.registro_anvisa && { icon: 'shield', label: 'ANVISA', value: produto.registro_anvisa },
+    produto.uso_unico !== null && produto.uso_unico !== undefined && {
+      icon: 'info',
+      label: 'Uso',
+      value: produto.uso_unico ? 'Descartável' : 'Reutilizável'
+    },
+    produto.esterilizacao && { icon: 'check', label: 'Esterilização', value: produto.esterilizacao },
+  ].filter(Boolean) as { icon: string; label: string; value: string }[];
+
+  // Ícones para specs
+  const SpecIcon = ({ type }: { type: string }) => {
+    switch (type) {
+      case 'building':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        );
+      case 'shield':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        );
+      case 'info':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'check':
+        return (
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+    <div className="min-h-screen bg-white pt-20 sm:pt-24">
       {/* Breadcrumb */}
-      <div className="bg-white border-b">
+      <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm flex-wrap">
-            <Link href="/" className="text-emerald-600 hover:text-emerald-700">
+          <nav className="flex items-center gap-2 text-sm sm:text-base text-gray-500">
+            <Link href="/" className="hover:text-gray-700 transition-colors">
               Início
             </Link>
-            <span className="text-gray-400">/</span>
-            <Link href="/categorias/opme" className="text-emerald-600 hover:text-emerald-700">
+            <span className="text-gray-300">/</span>
+            <Link href="/categorias/opme" className="hover:text-gray-700 transition-colors">
               OPME
             </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600 truncate max-w-[200px]">{produto.nome}</span>
+            {produto.categoria && (
+              <>
+                <span className="text-gray-300">/</span>
+                <span className="text-gray-600 font-medium truncate max-w-[200px] sm:max-w-[300px]">{produto.categoria}</span>
+              </>
+            )}
           </nav>
         </div>
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
-          {/* Imagem do Produto */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 lg:p-8">
-            <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-100">
-              {produto.imagem_url ? (
-                <Image
-                  src={produto.imagem_url}
-                  alt={produto.nome}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <svg
-                      className="w-24 h-24 text-gray-300 mx-auto"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1}
-                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                      />
-                    </svg>
-                    <span className="text-gray-400 text-sm mt-2 block">Imagem não disponível</span>
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
+
+        {/* Grid principal: imagem maior, info menor */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] xl:grid-cols-[1.3fr_1fr] gap-8 lg:gap-12">
+
+          {/* ========== COLUNA ESQUERDA: GALERIA DE IMAGENS ========== */}
+          <div className="lg:sticky lg:top-28 lg:self-start max-w-[600px] lg:max-w-none mx-auto lg:mx-0">
+            {loadingImages ? (
+              <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse rounded-2xl" />
+            ) : images.length > 0 ? (
+              <ImageGalleryFull
+                images={images}
+                productName={produto.nome}
+              />
+            ) : (
+              <div className="aspect-square relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden flex flex-col items-center justify-center">
+                <svg
+                  className="w-24 h-24 text-gray-300 mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                  />
+                </svg>
+                <p className="text-gray-400 text-sm">Imagem não disponível</p>
+              </div>
+            )}
           </div>
 
-          {/* Informações do Produto */}
+          {/* ========== COLUNA DIREITA: INFORMAÇÕES ========== */}
           <div className="flex flex-col">
-            {/* Categoria Badge */}
+
+            {/* Badge de categoria (discreto) */}
             {produto.categoria && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 w-fit mb-4">
+              <span className="inline-flex self-start px-3 py-1 rounded-full text-xs font-medium mb-4 bg-medical/10 text-medical">
                 {produto.categoria}
               </span>
             )}
 
-            {/* Nome do Produto */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            {/* Nome do produto */}
+            <h1 className="text-2xl sm:text-3xl lg:text-[28px] font-bold text-gray-900 leading-tight mb-2">
               {produto.nome}
             </h1>
 
-            {/* Informações Rápidas */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              {produto.fabricante && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <span><strong>Fabricante:</strong> {produto.fabricante}</span>
-                </div>
-              )}
-              {produto.registro_anvisa && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <span><strong>ANVISA:</strong> {produto.registro_anvisa}</span>
-                </div>
-              )}
-              {produto.uso_unico !== null && produto.uso_unico !== undefined && (
-                <div className="flex items-center gap-2 text-gray-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span><strong>Uso:</strong> {produto.uso_unico ? 'Uso Único' : 'Reutilizável'}</span>
-                </div>
-              )}
-            </div>
+            {/* Subtítulo: OPME • Categoria */}
+            <p className="text-sm text-gray-500 mb-6">
+              OPME{produto.categoria ? ` • ${produto.categoria}` : ''}
+            </p>
 
-            {/* Descrição */}
+            {/* Descrição curta (resumo) */}
             {produto.descricao && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Descrição</h3>
-                <p className="text-gray-600 whitespace-pre-line">{produto.descricao}</p>
+              <p className="text-[15px] text-gray-600 leading-relaxed mb-6 line-clamp-3">
+                {produto.descricao}
+              </p>
+            )}
+
+            {/* Especificações Rápidas - Grid compacto */}
+            {quickSpecs.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-8 pb-8 border-b border-gray-100">
+                {quickSpecs.map((spec, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm">
+                    <SpecIcon type={spec.icon} />
+                    <span className="text-gray-500">{spec.label}:</span>
+                    <span className="font-medium text-gray-900 truncate">{spec.value}</span>
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* CTA WhatsApp */}
-            <div className="mt-auto pt-6">
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            {/* Disponibilidade */}
+            <div className="flex items-center gap-3 p-4 rounded-xl mb-6 bg-green-50">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-green-100">
+                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                Solicitar Orçamento
-              </a>
-              <p className="text-sm text-gray-500 mt-3 text-center sm:text-left">
-                Clique para falar diretamente com nossa equipe
-              </p>
+              </div>
+              <div>
+                <p className="font-semibold text-sm text-green-800">Disponível para locação</p>
+                <p className="text-xs text-green-600">Entre em contato para verificar</p>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-col gap-3">
+              <WhatsAppButton
+                href={whatsappUrl}
+                label="Solicitar Orçamento via WhatsApp"
+                className="w-full text-center justify-center py-3.5"
+              />
+              <Link
+                href="/categorias/opme"
+                className="w-full text-center px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+              >
+                Voltar para OPME
+              </Link>
+            </div>
+
+            {/* ========== TABS DE INFORMAÇÕES DETALHADAS (dentro da coluna direita, igual ao CME) ========== */}
+            {hasDescricaoOuAplicacao && (
+              <div className="mt-10 pt-10 border-t border-gray-100">
+
+                {/* Tab Headers */}
+                <div className="flex gap-1 border-b border-gray-200 mb-6">
+                  <button
+                    onClick={() => setActiveTab('detalhes')}
+                    className={`px-5 py-3 text-sm font-medium transition-colors relative
+                      ${activeTab === 'detalhes'
+                        ? 'text-gray-900'
+                        : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Detalhes
+                    {activeTab === 'detalhes' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('informacoes')}
+                    className={`px-5 py-3 text-sm font-medium transition-colors relative
+                      ${activeTab === 'informacoes'
+                        ? 'text-gray-900'
+                        : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    Informações
+                    {activeTab === 'informacoes' && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                <div>
+
+                  {/* Tab: Detalhes */}
+                  {activeTab === 'detalhes' && (
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-900 mb-3">Descrição</h3>
+                        <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                          {produto.descricao || produto.aplicacao || 'Produto OPME de alta qualidade para procedimentos cirúrgicos.'}
+                        </p>
+                      </div>
+                      {produto.aplicacao && produto.aplicacao !== produto.descricao && (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-3">Aplicação</h3>
+                          <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                            {produto.aplicacao}
+                          </p>
+                        </div>
+                      )}
+                      {produto.especificacoes_tecnicas && (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-3">Especificações Técnicas</h3>
+                          <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                            {produto.especificacoes_tecnicas}
+                          </p>
+                        </div>
+                      )}
+                      {produto.modelos && (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-3">Modelos Disponíveis</h3>
+                          <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                            {produto.modelos}
+                          </p>
+                        </div>
+                      )}
+                      {produto.caracteristicas && (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-3">Características</h3>
+                          <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                            {produto.caracteristicas}
+                          </p>
+                        </div>
+                      )}
+                      {produto.compatibilidade && (
+                        <div>
+                          <h3 className="text-base font-semibold text-gray-900 mb-3">Compatibilidade</h3>
+                          <p className="text-[15px] text-gray-600 leading-relaxed whitespace-pre-line">
+                            {produto.compatibilidade}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab: Informações */}
+                  {activeTab === 'informacoes' && (
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900 mb-4">Informações Importantes</h3>
+                      <ul className="space-y-3">
+                        <li className="flex items-start gap-3 text-sm text-gray-600">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span>Material especial para procedimentos cirúrgicos</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm text-gray-600">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span>Produtos com registro ANVISA quando aplicável</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm text-gray-600">
+                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span>Garantia de qualidade e segurança</span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Seção de Produtos Relacionados */}
+      {produtosRelacionados.length > 0 && (
+        <div className="bg-gray-50 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Produtos Relacionados
+            </h2>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {produtosRelacionados.map((relacionado) => (
+                <ProdutoRelacionadoCard
+                  key={relacionado.id}
+                  produto={relacionado}
+                />
+              ))}
+            </div>
+
+            {/* Botão ver mais */}
+            <div className="text-center mt-8">
+              <Link
+                href={`/categorias/opme?categoria=${encodeURIComponent(produto.categoria || '')}`}
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm"
+              >
+                Ver mais produtos desta categoria
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </div>
           </div>
         </div>
-
-        {/* Seções de Informações Adicionais */}
-        <div className="mt-8 lg:mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <InfoSection
-            title="Aplicação"
-            content={produto.aplicacao}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            }
-          />
-
-          <InfoSection
-            title="Especificações Técnicas"
-            content={produto.especificacoes_tecnicas}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            }
-          />
-
-          <InfoSection
-            title="Modelos Disponíveis"
-            content={produto.modelos}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            }
-          />
-
-          <InfoSection
-            title="Características"
-            content={produto.caracteristicas}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            }
-          />
-
-          <InfoSection
-            title="Compatibilidade"
-            content={produto.compatibilidade}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            }
-          />
-
-          <InfoSection
-            title="Esterilização"
-            content={produto.esterilizacao}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            }
-          />
-
-          {produto.validade && (
-            <InfoSection
-              title="Validade"
-              content={produto.validade}
-              icon={
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              }
-            />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

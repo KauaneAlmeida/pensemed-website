@@ -8,22 +8,30 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Paleta PenseMed oficial
+        pense: {
+          primary: '#205b67',      // Teal principal
+          secondary: '#09354d',    // Azul escuro/petróleo
+          light: '#2a7a8a',        // Teal claro (hovers)
+          dark: '#184954',         // Teal escuro (pressed)
+        },
+        // Mantendo compatibilidade com classes existentes
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#2a7a8a',
+          600: '#205b67',
+          700: '#09354d',
+          800: '#184954',
+          900: '#072a3d',
         },
         medical: {
-          light: '#e8f4f8',
-          DEFAULT: '#006bb3',
-          dark: '#004d82',
+          light: '#2a7a8a',
+          DEFAULT: '#205b67',
+          dark: '#09354d',
         }
       },
       fontFamily: {

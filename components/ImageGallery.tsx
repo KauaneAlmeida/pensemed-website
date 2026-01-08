@@ -244,12 +244,14 @@ export function ImageGalleryFull({
   className?: string;
 }) {
   const [mainIndex, setMainIndex] = useState(0);
-  const [isZooming, setIsZooming] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
-  const [lensPosition, setLensPosition] = useState({ x: 0, y: 0 });
+  const [showZoomPanel, setShowZoomPanel] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const hasMultipleImages = images.length > 1;
+
+  // Configuracoes do zoom
+  const zoomLevel = 2.5; // Nivel de ampliacao
 
   // Encontra a imagem principal
   useEffect(() => {
@@ -263,15 +265,17 @@ export function ImageGalleryFull({
     e?.preventDefault();
     e?.stopPropagation();
     setMainIndex(prev => (prev + 1) % images.length);
+    setShowZoomPanel(false);
   }, [images.length]);
 
   const prevImage = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
     setMainIndex(prev => (prev - 1 + images.length) % images.length);
+    setShowZoomPanel(false);
   }, [images.length]);
 
-  // Handler para o efeito de lupa
+  // Handler para o efeito de zoom
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageContainerRef.current) return;
 
@@ -279,35 +283,24 @@ export function ImageGalleryFull({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Desativar zoom nas bordas laterais (area das setas - 60px de cada lado)
-    const edgeMargin = 60;
+    // Desativar zoom nas bordas laterais (area das setas)
+    const edgeMargin = 50;
     if (x < edgeMargin || x > rect.width - edgeMargin) {
-      setIsZooming(false);
+      setShowZoomPanel(false);
       return;
     }
 
-    // Reativar zoom se estava desativado
-    setIsZooming(true);
+    setShowZoomPanel(true);
 
-    // Calcula a porcentagem da posicao do mouse
-    const xPercent = (x / rect.width) * 100;
-    const yPercent = (y / rect.height) * 100;
-
-    // Posicao da lupa (centralizada no mouse)
-    const lensSize = 150; // tamanho da lupa em pixels
-    const lensX = Math.max(0, Math.min(x - lensSize / 2, rect.width - lensSize));
-    const lensY = Math.max(0, Math.min(y - lensSize / 2, rect.height - lensSize));
+    // Calcula a porcentagem da posicao do mouse (0-100)
+    const xPercent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const yPercent = Math.max(0, Math.min(100, (y / rect.height) * 100));
 
     setZoomPosition({ x: xPercent, y: yPercent });
-    setLensPosition({ x: lensX, y: lensY });
-  };
-
-  const handleMouseEnter = () => {
-    // Zoom sera ativado pelo handleMouseMove quando nao estiver nas bordas
   };
 
   const handleMouseLeave = () => {
-    setIsZooming(false);
+    setShowZoomPanel(false);
   };
 
   if (images.length === 0) {
@@ -322,109 +315,110 @@ export function ImageGalleryFull({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Imagem principal grande com zoom tipo lupa */}
-      <div
-        ref={imageContainerRef}
-        className="aspect-square relative overflow-hidden group cursor-crosshair rounded-lg bg-white"
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Image
-          src={images[mainIndex].url}
-          alt={productName}
-          fill
-          className="object-contain p-2"
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw"
-        />
+      {/* Container principal - posicao relativa para o painel de zoom */}
+      <div className="relative">
+        {/* Imagem principal */}
+        <div
+          ref={imageContainerRef}
+          className="aspect-square relative overflow-hidden group cursor-crosshair rounded-lg bg-white"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+          <Image
+            src={images[mainIndex].url}
+            alt={productName}
+            fill
+            className="object-contain p-2"
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
 
-        {/* Lupa/Magnifier - aparece no hover */}
-        {isZooming && (
+
+          {/* Setas de navegacao na imagem grande */}
+          {hasMultipleImages && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
+                           opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
+                           hover:bg-black/70 hover:scale-110 z-20
+                           focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Imagem anterior"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <button
+                onClick={nextImage}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
+                           opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
+                           hover:bg-black/70 hover:scale-110 z-20
+                           focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label="Proxima imagem"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <span className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-10
+                              opacity-0 group-hover:opacity-100 transition-opacity">
+                {mainIndex + 1}/{images.length}
+              </span>
+            </>
+          )}
+
+          {/* Indicador de zoom - desktop only */}
+          {!showZoomPanel && (
+            <div className="hidden md:flex absolute bottom-4 left-4 bg-black/70 text-white text-sm px-3 py-2 rounded-lg z-10
+                            opacity-0 group-hover:opacity-100 transition-opacity items-center gap-2 backdrop-blur-sm">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              </svg>
+              Passe o mouse para ampliar
+            </div>
+          )}
+        </div>
+
+        {/* Lupa circular que segue o mouse */}
+        {showZoomPanel && (
           <div
-            className="absolute w-[180px] h-[180px] border-2 border-white shadow-xl overflow-hidden pointer-events-none z-20 bg-white"
+            className="hidden md:block absolute w-[200px] h-[200px] rounded-full overflow-hidden bg-white border-4 border-white shadow-2xl z-30 pointer-events-none"
             style={{
-              left: lensPosition.x,
-              top: lensPosition.y,
-              borderRadius: '50%',
+              left: `calc(${zoomPosition.x}% - 100px)`,
+              top: `calc(${zoomPosition.y}% - 100px)`,
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(0, 0, 0, 0.1)',
             }}
           >
             <div
-              className="absolute w-[350%] h-[350%]"
+              className="w-full h-full"
               style={{
                 backgroundImage: `url(${images[mainIndex].url})`,
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat',
+                backgroundSize: `${zoomLevel * 100}%`,
                 backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                left: '-125%',
-                top: '-125%',
+                backgroundRepeat: 'no-repeat',
               }}
             />
           </div>
         )}
-
-        {/* Setas de navegacao na imagem grande */}
-        {hasMultipleImages && (
-          <>
-            {/* Seta esquerda */}
-            <button
-              onClick={prevImage}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
-                         opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
-                         hover:bg-black/70 hover:scale-110 z-10
-                         focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label="Imagem anterior"
-            >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            {/* Seta direita */}
-            <button
-              onClick={nextImage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
-                         opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
-                         hover:bg-black/70 hover:scale-110 z-10
-                         focus:outline-none focus:ring-2 focus:ring-white/50"
-              aria-label="Proxima imagem"
-            >
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            {/* Badge de contagem */}
-            <span className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-10
-                            opacity-0 group-hover:opacity-100 transition-opacity">
-              {mainIndex + 1}/{images.length}
-            </span>
-          </>
-        )}
-
-        {/* Indicador de zoom */}
-        {!isZooming && (
-          <div className="absolute bottom-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10
-                          opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-            </svg>
-            Passe o mouse para zoom
-          </div>
-        )}
       </div>
 
-      {/* Miniaturas com fundo branco e imagem completa */}
+      {/* Miniaturas com indicador de selecao embaixo */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
           {images.map((image, index) => (
             <button
               key={image.id || index}
-              onClick={() => setMainIndex(index)}
+              onClick={() => {
+                setMainIndex(index);
+                setShowZoomPanel(false);
+              }}
               className={`flex-shrink-0 w-20 h-20 relative overflow-hidden transition-all rounded-md bg-white
                          ${index === mainIndex
-                           ? 'ring-2 ring-medical ring-offset-1'
-                           : 'opacity-70 hover:opacity-100'}`}
+                           ? 'opacity-100 ring-2 ring-medical'
+                           : 'opacity-60 hover:opacity-90'}`}
             >
               <Image
                 src={image.url}

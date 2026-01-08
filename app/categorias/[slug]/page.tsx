@@ -60,10 +60,10 @@ export default async function CategoriaPage({ params }: CategoriaPageProps) {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               {categoria.nome}
             </h1>
-            <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-2">
+            <p className="text-xl text-white/80 max-w-3xl mx-auto mb-2">
               {categoria.descricao}
             </p>
-            <p className="text-lg text-blue-50">
+            <p className="text-lg text-white/70">
               {categoria.destaque}
             </p>
           </div>

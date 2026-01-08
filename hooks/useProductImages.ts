@@ -215,3 +215,89 @@ function getImageTableName(tableName: string, productId?: number): string {
 }
 
 export { getImageTableName };
+
+/**
+ * Interface para imagens de produtos OPME
+ */
+export interface OPMEImage {
+  id: number;
+  produto_id: number;
+  url: string;
+  ordem: number;
+  alt_text: string | null;
+  created_at?: string;
+}
+
+/**
+ * Busca imagens de um produto OPME específico
+ */
+export async function getOPMEProductImages(
+  productId: number
+): Promise<{ data: OPMEImage[] | null; error: string | null }> {
+  try {
+    console.log(`[getOPMEProductImages] Buscando imagens para produto OPME ${productId}`);
+
+    const { data, error } = await supabase
+      .from('produtos_opme_imagens')
+      .select('*')
+      .eq('produto_id', productId)
+      .order('ordem', { ascending: true });
+
+    if (error) {
+      console.error(`[getOPMEProductImages] Erro:`, error.message);
+      return { data: null, error: error.message };
+    }
+
+    console.log(`[getOPMEProductImages] Encontradas ${data?.length || 0} imagens`);
+    return { data, error: null };
+  } catch (err) {
+    console.error('[getOPMEProductImages] Erro inesperado:', err);
+    return { data: null, error: 'Erro ao buscar imagens OPME' };
+  }
+}
+
+/**
+ * Hook para buscar imagens de um produto OPME
+ */
+export function useOPMEProductImages(productId: number | null) {
+  const [images, setImages] = useState<OPMEImage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!productId) {
+      setImages([]);
+      return;
+    }
+
+    const fetchImages = async () => {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await getOPMEProductImages(productId);
+
+      if (fetchError) {
+        setError(fetchError);
+        setImages([]);
+      } else {
+        setImages(data || []);
+      }
+
+      setLoading(false);
+    };
+
+    fetchImages();
+  }, [productId]);
+
+  // Retorna a imagem principal (ordem = 0) ou a primeira
+  const mainImage = images.find(img => img.ordem === 0) || images[0] || null;
+
+  return {
+    images,
+    mainImage,
+    loading,
+    error,
+    hasImages: images.length > 0,
+    imageCount: images.length,
+  };
+}

@@ -3,31 +3,75 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ProdutoOPME } from '@/lib/types';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import LoadingScreen from '@/components/LoadingScreen';
 import ShareDropdown from '@/components/ShareDropdown';
+import { getOPMEProductImages } from '@/hooks/useProductImages';
 
-// Card de Produto OPME
-function ProdutoOPMECard({ produto }: { produto: ProdutoOPME }) {
+// Tipo estendido para produto com imagem
+interface ProdutoOPMEComImagem extends ProdutoOPME {
+  imagem_principal?: string | null;
+}
+
+// Card de Produto OPME - seguindo padrão visual de CME e Equipamentos (fundo branco)
+function ProdutoOPMECard({ produto }: { produto: ProdutoOPMEComImagem }) {
   const whatsappLink = getWhatsAppProdutoLink(produto.nome);
+  const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_principal || null);
+  const [imageError, setImageError] = useState(false);
+  const [loading, setLoading] = useState(!produto.imagem_principal);
+
+  // Buscar imagem ao montar o card (se não tiver imagem_principal)
+  useEffect(() => {
+    if (!produto.imagem_principal) {
+      getOPMEProductImages(produto.id).then(({ data }) => {
+        if (data && data.length > 0) {
+          // Filtrar apenas imagens com ordem 0 (principal) e pegar a mais recente (maior ID)
+          const imagensOrdem0 = data.filter(img => img.ordem === 0);
+          const principal = imagensOrdem0.length > 0
+            ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
+            : data.reduce((a, b) => a.id > b.id ? a : b);
+          setImagemUrl(principal.url);
+        }
+        setLoading(false);
+      });
+    }
+  }, [produto.id, produto.imagem_principal]);
 
   return (
     <Link
       href={`/categorias/opme/${produto.id}`}
-      className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-gray-300 hover:shadow-lg transition-all duration-300 block"
+      className="group bg-white rounded-lg sm:rounded-xl overflow-hidden border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 block"
     >
       <div className="relative">
-        {/* Placeholder de imagem */}
-        <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <svg className="w-20 h-20 text-gray-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-          </svg>
+        {/* Imagem do produto ou placeholder - fundo branco igual ao CME */}
+        <div className="aspect-square relative bg-white">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+            </div>
+          ) : imagemUrl && !imageError ? (
+            <Image
+              src={imagemUrl}
+              alt={produto.nome}
+              fill
+              className="object-contain p-2 sm:p-3 group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
         </div>
 
-        {/* Badge de categoria */}
-        <span className="absolute top-2 left-2 px-2 py-1 bg-gray-700 text-white text-xs font-semibold rounded-full shadow-md z-20">
-          {produto.categoria}
+        {/* Badge OPME */}
+        <span className="absolute top-2 left-2 px-2 py-1 bg-[#09354d] text-white text-xs font-semibold rounded-full shadow-md z-20">
+          OPME
         </span>
 
         {/* Botão WhatsApp */}
@@ -46,25 +90,34 @@ function ProdutoOPMECard({ produto }: { produto: ProdutoOPME }) {
       </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-gray-700 transition-colors">
+        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mt-1 group-hover:text-gray-700 transition-colors">
           {produto.nome}
         </h3>
 
-        {produto.fabricante && (
-          <p className="text-xs text-gray-500 mb-1">
-            <span className="font-medium">Fabricante:</span> {produto.fabricante}
-          </p>
-        )}
+        {/* Informações do produto na parte inferior */}
+        <div className="mt-2 space-y-1">
+          {produto.categoria && (
+            <p className="text-xs text-gray-500">
+              <span className="font-medium">Categoria:</span> {produto.categoria}
+            </p>
+          )}
 
-        {produto.registro_anvisa && (
-          <p className="text-xs text-gray-500">
-            <span className="font-medium">ANVISA:</span> {produto.registro_anvisa}
-          </p>
-        )}
+          {produto.fabricante && (
+            <p className="text-xs text-gray-500">
+              <span className="font-medium">Fabricante:</span> {produto.fabricante}
+            </p>
+          )}
 
-        {!produto.fabricante && !produto.registro_anvisa && produto.descricao && (
-          <p className="text-xs text-gray-500 line-clamp-2">{produto.descricao}</p>
-        )}
+          {produto.registro_anvisa && (
+            <p className="text-xs text-gray-500">
+              <span className="font-medium">ANVISA:</span> {produto.registro_anvisa}
+            </p>
+          )}
+
+          {!produto.fabricante && !produto.registro_anvisa && !produto.categoria && produto.descricao && (
+            <p className="text-xs text-gray-500 line-clamp-2">{produto.descricao}</p>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -242,7 +295,7 @@ function OPMEContent() {
             defaultValue={busca}
             onChange={handleBuscaChange}
             placeholder="Buscar produtos..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#09354d] focus:border-transparent text-sm"
             autoComplete="off"
             spellCheck={false}
           />
@@ -266,8 +319,8 @@ function OPMEContent() {
                 onClick={() => handleCategoriaClick(cat)}
                 className={`w-full text-left text-sm py-1.5 px-2 rounded transition-colors ${
                   categoriaFiltro === cat
-                    ? 'bg-gray-700 text-white font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-[#09354d] text-white font-medium'
+                    : 'text-gray-600 hover:bg-[#09354d]/10 hover:text-[#09354d]'
                 }`}
               >
                 {cat}
@@ -291,7 +344,7 @@ function OPMEContent() {
       <div className="mt-6 pt-6 border-t border-gray-200">
         <Link
           href="/catalogo?categoria=OPME"
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors text-sm"
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#09354d] text-white font-semibold rounded-lg hover:bg-[#072a3d] transition-colors text-sm"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -304,7 +357,7 @@ function OPMEContent() {
       {isMobile && (
         <button
           onClick={() => setShowMobileFilters(false)}
-          className="w-full mt-4 py-3 px-4 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+          className="w-full mt-4 py-3 px-4 bg-[#09354d] text-white font-semibold rounded-lg hover:bg-[#072a3d] transition-colors"
         >
           Ver {produtos.length} produtos
         </button>
@@ -315,9 +368,9 @@ function OPMEContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <section className="bg-gradient-to-br from-gray-700 to-gray-900 text-white pt-24 pb-12">
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white pt-28 sm:pt-32 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="text-sm text-gray-400 mb-4">
+          <nav className="text-sm sm:text-base text-gray-300 mb-4">
             <Link href="/" className="hover:text-white transition-colors">
               Página Inicial
             </Link>
@@ -327,7 +380,7 @@ function OPMEContent() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
             OPME
           </h1>
-          <p className="text-lg text-gray-300 max-w-2xl">
+          <p className="text-lg text-gray-200 max-w-2xl">
             Órteses, Próteses e Materiais Especiais - Materiais descartáveis de alta qualidade para procedimentos cirúrgicos
           </p>
         </div>

@@ -27,7 +27,7 @@ export default function InstrumentoGrupoCard({ grupo, slugCaixa }: InstrumentoGr
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#205b67]/10 to-gray-100">
             <svg
               className="w-12 h-12 text-gray-300"
               fill="none"

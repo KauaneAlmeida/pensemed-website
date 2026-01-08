@@ -52,7 +52,7 @@ function CaixaCard({ caixa }: { caixa: CaixaCME }) {
   return (
     <Link
       href={`/instrumentacao-cme/${caixa.slug}`}
-      className="group bg-white overflow-hidden border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 block"
+      className="group bg-white overflow-hidden border border-gray-100 hover:border-[#205b67]/30 hover:shadow-lg transition-all duration-300 block"
     >
       {/* Imagem - sem bordas, cobrindo todo o espaço */}
       <div className="aspect-square relative overflow-hidden bg-gray-50">
@@ -72,7 +72,7 @@ function CaixaCard({ caixa }: { caixa: CaixaCME }) {
         )}
         {/* Badge de quantidade */}
         <div className="absolute top-2 right-2">
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#205b67]/10 text-[#205b67]">
             {caixa.total_instrumentos} {caixa.total_instrumentos === 1 ? 'item' : 'itens'}
           </span>
         </div>
@@ -80,10 +80,10 @@ function CaixaCard({ caixa }: { caixa: CaixaCME }) {
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-[#205b67] transition-colors">
           {caixa.nome_exibicao}
         </h3>
-        <div className="flex items-center text-blue-600 text-xs font-medium">
+        <div className="flex items-center text-[#205b67] text-xs font-medium">
           <span>Ver instrumentos</span>
           <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -246,7 +246,7 @@ function InstrumentacaoCMEContent() {
             <li key={caixa.slug}>
               <Link
                 href={`/instrumentacao-cme/${caixa.slug}`}
-                className="w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                className="w-full text-left text-sm py-1.5 px-2 rounded transition-colors flex justify-between items-center text-gray-600 hover:bg-[#205b67]/10 hover:text-[#205b67]"
               >
                 <span className="truncate pr-2">{caixa.nome_exibicao}</span>
                 <span className="text-xs text-gray-400 flex-shrink-0">({caixa.total_instrumentos})</span>
@@ -270,7 +270,7 @@ function InstrumentacaoCMEContent() {
       <div className="mt-6 pt-6 border-t border-gray-200">
         <Link
           href="/catalogo?categoria=Instrumentação Cirúrgica CME"
-          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-[#205b67] text-white font-semibold rounded-lg hover:bg-[#184954] transition-colors text-sm"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -283,7 +283,7 @@ function InstrumentacaoCMEContent() {
       {isMobile && (
         <button
           onClick={() => setShowMobileFilters(false)}
-          className="w-full mt-4 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+          className="w-full mt-4 py-3 px-4 bg-[#205b67] text-white font-semibold rounded-lg hover:bg-[#184954] transition-colors"
         >
           Ver {filteredCaixas.length} caixas
         </button>
@@ -293,10 +293,10 @@ function InstrumentacaoCMEContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Azul */}
-      <section className="bg-gradient-to-br from-[#0066cc] to-[#004499] text-white pt-24 pb-12">
+      {/* Header */}
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white pt-28 sm:pt-32 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="text-sm text-blue-200 mb-4">
+          <nav className="text-sm sm:text-base text-gray-300 mb-4">
             <Link href="/" className="hover:text-white transition-colors">
               Página Inicial
             </Link>
@@ -306,7 +306,7 @@ function InstrumentacaoCMEContent() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
             Instrumentação Cirúrgica CME
           </h1>
-          <p className="text-lg text-blue-100 max-w-2xl">
+          <p className="text-lg text-gray-200 max-w-2xl">
             Instrumentação cirúrgica completa com processamento em CME certificado, garantindo segurança e qualidade.
           </p>
         </div>
@@ -373,9 +373,9 @@ function InstrumentacaoCMEContent() {
             {/* Tags de filtros ativos */}
             {busca && (
               <div className="flex flex-wrap gap-2 mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#205b67]/10 text-[#205b67] rounded-full text-sm">
                   Busca: &quot;{busca}&quot;
-                  <button onClick={limparFiltros} className="hover:text-blue-900">
+                  <button onClick={limparFiltros} className="hover:text-[#09354d]">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -406,7 +406,7 @@ function InstrumentacaoCMEContent() {
                 <p className="text-gray-500 mb-4">Tente ajustar a busca</p>
                 <button
                   onClick={limparFiltros}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 bg-[#205b67] text-white rounded-lg font-medium hover:bg-[#184954] transition-colors"
                 >
                   Limpar busca
                 </button>

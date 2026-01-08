@@ -9,11 +9,11 @@ export default function Loading() {
       </div>
 
       {/* Header Skeleton */}
-      <section className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white py-12">
+      <section className="bg-gradient-to-br from-[#09354d] to-[#205b67] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="h-10 bg-emerald-500/50 rounded-lg w-80 mx-auto mb-3 animate-pulse" />
-            <div className="h-5 bg-emerald-500/50 rounded w-48 mx-auto animate-pulse" />
+            <div className="h-10 bg-white/20 rounded-lg w-80 mx-auto mb-3 animate-pulse" />
+            <div className="h-5 bg-white/20 rounded w-48 mx-auto animate-pulse" />
           </div>
         </div>
       </section>
