@@ -17,8 +17,23 @@ export interface ProductImage {
 const TABELAS_COM_PRODUTO_NOME = [
   'caixa_de_apoio_alif_imagens',
   'caixa_de_apoio_cervical_imagens',
-  'caixa_de_apoio_lombar_imagens',
 ];
+
+/**
+ * Tabelas com estrutura especial (nome, url_imagem, produto_slug)
+ * Diferente do padrão (produto_id/produto_nome, url, principal)
+ */
+const TABELAS_ESTRUTURA_ESPECIAL: Record<string, {
+  campoBusca: string;       // Campo para buscar o produto (nome ou produto_slug)
+  campoUrl: string;         // Campo que contém a URL da imagem
+  usarNomeExato: boolean;   // Se deve buscar pelo nome exato do produto
+}> = {
+  'caixa_de_apoio_lombar_imagens': {
+    campoBusca: 'nome',
+    campoUrl: 'url_imagem',
+    usarNomeExato: true,
+  },
+};
 
 /**
  * Hook para buscar imagens de um produto do Supabase
@@ -82,7 +97,7 @@ export function useProductImages(productId: number | null, tableName: string) {
 
 /**
  * Função utilitária para buscar imagens de forma assíncrona (sem hook)
- * Suporta tabelas com produto_id ou produto_nome
+ * Suporta tabelas com produto_id, produto_nome ou estrutura especial
  */
 export async function getProductImages(
   productId: number,
@@ -93,11 +108,79 @@ export async function getProductImages(
     // Passa productId para permitir mapeamento especial de produtos com tabela de imagens própria
     const imageTableName = getImageTableName(tableName, productId);
 
+    // Verifica se a tabela tem estrutura especial
+    const estruturaEspecial = TABELAS_ESTRUTURA_ESPECIAL[imageTableName];
+
     // Verifica se a tabela usa produto_nome em vez de produto_id
     const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(imageTableName);
 
-    console.log(`[getProductImages] Buscando imagens para produto ${productId} em "${imageTableName}" (usaProdutoNome: ${usaProdutoNome})`);
+    console.log(`[getProductImages] Buscando imagens para produto ${productId} em "${imageTableName}" (estruturaEspecial: ${!!estruturaEspecial}, usaProdutoNome: ${usaProdutoNome})`);
 
+    // Tratamento para tabelas com estrutura especial
+    if (estruturaEspecial && productName) {
+      console.log(`[getProductImages] Usando estrutura especial - campo: ${estruturaEspecial.campoBusca}, valor: "${productName}"`);
+
+      // Primeiro tenta busca exata
+      let { data, error } = await supabase
+        .from(imageTableName)
+        .select('*')
+        .eq(estruturaEspecial.campoBusca, productName)
+        .order('ordem', { ascending: true });
+
+      // Se não encontrou, tenta busca case-insensitive com ilike
+      if (!error && (!data || data.length === 0)) {
+        console.log(`[getProductImages] Busca exata não encontrou, tentando ilike...`);
+        const result = await supabase
+          .from(imageTableName)
+          .select('*')
+          .ilike(estruturaEspecial.campoBusca, productName)
+          .order('ordem', { ascending: true });
+        data = result.data;
+        error = result.error;
+      }
+
+      // Se ainda não encontrou, tenta busca parcial (contém o nome)
+      if (!error && (!data || data.length === 0)) {
+        console.log(`[getProductImages] ilike não encontrou, tentando busca parcial...`);
+        // Pega as primeiras palavras significativas do nome para busca
+        const palavrasChave = productName
+          .replace(/[^\w\sÀ-ú]/g, '') // Remove caracteres especiais exceto acentos
+          .split(/\s+/)
+          .filter(p => p.length > 2)
+          .slice(0, 3)
+          .join('%');
+
+        if (palavrasChave) {
+          const result = await supabase
+            .from(imageTableName)
+            .select('*')
+            .ilike(estruturaEspecial.campoBusca, `%${palavrasChave}%`)
+            .order('ordem', { ascending: true });
+          data = result.data;
+          error = result.error;
+          console.log(`[getProductImages] Busca parcial com "${palavrasChave}" encontrou ${data?.length || 0} imagens`);
+        }
+      }
+
+      if (error) {
+        console.error(`[getProductImages] Erro ao buscar em "${imageTableName}":`, error.message);
+        return { data: null, error: error.message };
+      }
+
+      // Normaliza os dados para o formato padrão ProductImage
+      const imagensNormalizadas: ProductImage[] = (data || []).map((item: any, index: number) => ({
+        id: item.id || `${index}`,
+        url: item[estruturaEspecial.campoUrl] || item.url_imagem || item.url,
+        ordem: item.ordem || index,
+        principal: item.ordem === 1 || index === 0,
+        produto_nome: item.nome || productName,
+      }));
+
+      console.log(`[getProductImages] Encontradas ${imagensNormalizadas.length} imagens (estrutura especial)`);
+      return { data: imagensNormalizadas, error: null };
+    }
+
+    // Busca padrão
     let query = supabase.from(imageTableName).select('*');
 
     if (usaProdutoNome && productName) {

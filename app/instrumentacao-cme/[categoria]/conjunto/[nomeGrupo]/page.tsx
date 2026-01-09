@@ -123,7 +123,7 @@ export default function ConjuntoPage({ params }: ConjuntoPageProps) {
 
   // WhatsApp message com variação selecionada
   const whatsappMessage = `Olá! Gostaria de informações sobre o instrumento ${instrumentoAtual.codigo} - ${instrumentoAtual.nome} da ${dados.caixaNome}`;
-  const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `https://wa.me/5511940201088?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">

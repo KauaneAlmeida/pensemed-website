@@ -2,7 +2,7 @@
  * Utilitários para geração de links do WhatsApp
  */
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5519992660303';
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5511940201088';
 
 /**
  * Gera link do WhatsApp com mensagem pré-formatada

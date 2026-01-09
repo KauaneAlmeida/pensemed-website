@@ -123,7 +123,7 @@ export default function EquipamentoDetalhes({
     ? ` (${variacaoSelecionada.variacaoTexto})`
     : '';
   const whatsappMessage = `Olá! Gostaria de informações sobre o equipamento ${codigoMsg}${nomeBase}${variacaoMsg} da categoria ${nomeExibicao}`;
-  const whatsappUrl = `https://wa.me/5519992660303?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappUrl = `https://wa.me/5511940201088?text=${encodeURIComponent(whatsappMessage)}`;
 
   // Specs rápidas
   const quickSpecs = [

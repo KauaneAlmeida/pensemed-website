@@ -9,11 +9,35 @@ const PRODUTOS_OCULTOS: (string | number)[] = [
 ];
 
 /**
+ * Produtos ocultos por tabela específica
+ * Chave: nome da tabela (lowercase)
+ * Valor: array de nomes de produtos a ocultar (lowercase para comparação)
+ */
+const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
+  'caixa de apoio lombar': [
+    'afastador abdominal all path - omni tract',
+  ],
+};
+
+/**
  * Verifica se um produto deve ser ocultado da listagem
  */
 export function produtoDeveSerOculto(id: string | number): boolean {
   const idNumerico = typeof id === 'string' ? parseInt(id, 10) : id;
   return PRODUTOS_OCULTOS.includes(idNumerico) || PRODUTOS_OCULTOS.includes(id);
+}
+
+/**
+ * Verifica se um produto deve ser ocultado de uma tabela específica
+ */
+export function produtoDeveSerOcultoDaTabela(nomeProduto: string, nomeTabela: string): boolean {
+  const tabelaLower = nomeTabela.toLowerCase();
+  const produtoLower = nomeProduto.toLowerCase().trim();
+
+  const produtosOcultos = PRODUTOS_OCULTOS_POR_TABELA[tabelaLower];
+  if (!produtosOcultos) return false;
+
+  return produtosOcultos.some(p => produtoLower.includes(p) || p.includes(produtoLower));
 }
 
 export interface InstrumentoBase {

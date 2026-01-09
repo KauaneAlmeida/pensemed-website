@@ -233,6 +233,7 @@ export function ImageGalleryCompact({
 /**
  * Versao para pagina de detalhes com galeria completa
  * Com zoom tipo lupa/magnifier, setas de navegacao, sem bordas
+ * Otimizado para mobile com swipe e setas sempre visiveis
  */
 export function ImageGalleryFull({
   images,
@@ -246,6 +247,7 @@ export function ImageGalleryFull({
   const [mainIndex, setMainIndex] = useState(0);
   const [showZoomPanel, setShowZoomPanel] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [touchStart, setTouchStart] = useState<number | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const hasMultipleImages = images.length > 1;
@@ -261,19 +263,41 @@ export function ImageGalleryFull({
     }
   }, [images]);
 
-  const nextImage = useCallback((e?: React.MouseEvent) => {
+  const nextImage = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
     setMainIndex(prev => (prev + 1) % images.length);
     setShowZoomPanel(false);
   }, [images.length]);
 
-  const prevImage = useCallback((e?: React.MouseEvent) => {
+  const prevImage = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
     setMainIndex(prev => (prev - 1 + images.length) % images.length);
     setShowZoomPanel(false);
   }, [images.length]);
+
+  // Suporte a swipe em mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null || !hasMultipleImages) return;
+
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        nextImage();
+      } else {
+        prevImage();
+      }
+    }
+
+    setTouchStart(null);
+  };
 
   // Handler para o efeito de zoom
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -305,8 +329,8 @@ export function ImageGalleryFull({
 
   if (images.length === 0) {
     return (
-      <div className={`aspect-square flex items-center justify-center rounded-lg bg-white ${className}`}>
-        <svg className="w-20 h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={`aspect-square flex items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 ${className}`}>
+        <svg className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       </div>
@@ -314,59 +338,77 @@ export function ImageGalleryFull({
   }
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-2 sm:space-y-3 ${className}`}>
       {/* Container principal - posicao relativa para o painel de zoom */}
       <div className="relative">
         {/* Imagem principal */}
         <div
           ref={imageContainerRef}
-          className="aspect-square relative overflow-hidden group cursor-crosshair rounded-lg bg-white"
+          className="aspect-square relative overflow-hidden group md:cursor-crosshair rounded-xl sm:rounded-2xl bg-white"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           <Image
             src={images[mainIndex].url}
             alt={productName}
             fill
-            className="object-contain p-2"
+            className="object-contain p-3 sm:p-4"
             priority
             sizes="(max-width: 768px) 100vw, 50vw"
           />
 
-
           {/* Setas de navegacao na imagem grande */}
           {hasMultipleImages && (
             <>
+              {/* Seta esquerda - sempre visivel no mobile */}
               <button
                 onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
-                           opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
-                           hover:bg-black/70 hover:scale-110 z-20
+                className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-black/40 sm:bg-black/50 text-white p-2 sm:p-3 rounded-full
+                           opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 cursor-pointer
+                           hover:bg-black/70 active:scale-95 sm:hover:scale-110 z-20
                            focus:outline-none focus:ring-2 focus:ring-white/50"
                 aria-label="Imagem anterior"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
+              {/* Seta direita - sempre visivel no mobile */}
               <button
                 onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 sm:p-3 rounded-full
-                           opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer
-                           hover:bg-black/70 hover:scale-110 z-20
+                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-black/40 sm:bg-black/50 text-white p-2 sm:p-3 rounded-full
+                           opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 cursor-pointer
+                           hover:bg-black/70 active:scale-95 sm:hover:scale-110 z-20
                            focus:outline-none focus:ring-2 focus:ring-white/50"
                 aria-label="Proxima imagem"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
 
-              <span className="absolute top-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full z-10
-                              opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Indicador de posicao - sempre visivel */}
+              <span className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-black/60 text-white text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full z-10">
                 {mainIndex + 1}/{images.length}
               </span>
+
+              {/* Indicadores (dots) para mobile */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 sm:hidden z-10">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setMainIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-200
+                               ${index === mainIndex
+                                 ? 'bg-white scale-110'
+                                 : 'bg-white/50'}`}
+                    aria-label={`Ir para imagem ${index + 1}`}
+                  />
+                ))}
+              </div>
             </>
           )}
 
@@ -405,9 +447,9 @@ export function ImageGalleryFull({
         )}
       </div>
 
-      {/* Miniaturas com indicador de selecao embaixo */}
+      {/* Miniaturas com indicador de selecao embaixo - escondidas no mobile, mostradas no desktop */}
       {images.length > 1 && (
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+        <div className="hidden sm:flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-thin">
           {images.map((image, index) => (
             <button
               key={image.id || index}
@@ -415,9 +457,9 @@ export function ImageGalleryFull({
                 setMainIndex(index);
                 setShowZoomPanel(false);
               }}
-              className={`flex-shrink-0 w-20 h-20 relative overflow-hidden transition-all rounded-md bg-white
+              className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative overflow-hidden transition-all rounded-lg bg-white
                          ${index === mainIndex
-                           ? 'opacity-100 ring-2 ring-medical'
+                           ? 'opacity-100 ring-2 ring-[#09354d]'
                            : 'opacity-60 hover:opacity-90'}`}
             >
               <Image

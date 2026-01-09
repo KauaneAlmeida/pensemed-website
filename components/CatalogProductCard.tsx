@@ -31,6 +31,7 @@ interface CatalogProductCardProps {
 
 export default function CatalogProductCard({ produto }: CatalogProductCardProps) {
   const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_url || null);
+  const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const whatsappLink = getWhatsAppProdutoLink(produto.nome);
@@ -53,8 +54,11 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
         if (produto.categoria_principal === 'OPME') {
           const { data, error } = await getOPMEProductImages(productId);
           if (!error && data && data.length > 0) {
-            // Usa a primeira imagem (ordem = 0) ou a primeira disponível
-            const imagemPrincipal = data.find(img => img.ordem === 0) || data[0];
+            // Filtrar imagens com ordem 0 (principal) e pegar a mais recente (maior ID)
+            const imagensOrdem0 = data.filter(img => img.ordem === 0);
+            const imagemPrincipal = imagensOrdem0.length > 0
+              ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
+              : data.reduce((a, b) => a.id > b.id ? a : b);
             if (imagemPrincipal?.url) {
               setImagemUrl(imagemPrincipal.url);
             }
@@ -64,8 +68,11 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
           const { data, error } = await getProductImages(productId, produto.caixa_tabela, produto.nome);
 
           if (!error && data && data.length > 0) {
-            // Usa a imagem principal ou a primeira
-            const imagemPrincipal = data.find(img => img.principal) || data[0];
+            // Filtrar imagens principais (ordem 0 ou principal=true) e pegar a mais recente
+            const imagensPrincipais = data.filter(img => img.principal || img.ordem === 0);
+            const imagemPrincipal = imagensPrincipais.length > 0
+              ? imagensPrincipais.reduce((a, b) => (parseInt(a.id) > parseInt(b.id) ? a : b))
+              : data.reduce((a, b) => (parseInt(a.id) > parseInt(b.id) ? a : b));
             if (imagemPrincipal?.url) {
               setImagemUrl(imagemPrincipal.url);
             }
@@ -92,12 +99,14 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
           <div className="flex items-center justify-center h-full">
             <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-[#205b67] rounded-full animate-spin" />
           </div>
-        ) : imagemUrl ? (
+        ) : imagemUrl && !imageError ? (
           <Image
             src={imagemUrl}
             alt={produto.nome}
             fill
             className="object-contain p-2 sm:p-4 group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="flex items-center justify-center h-full">

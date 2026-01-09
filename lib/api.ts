@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginados, CaixaCME, tabelaToNomeExibicao, tabelaToSlug, CategoriaEquipamento, EquipamentoMedico, EquipamentosMedicosPaginados, ProdutoOPME, ProdutosOPMEPaginados } from './types';
 import { unstable_cache } from 'next/cache';
 import { devLog, logError, CACHE_CONFIG } from './cache';
+import { produtoDeveSerOcultoDaTabela } from './instrumentUtils';
 
 // Flag para habilitar/desabilitar logs detalhados
 const ENABLE_DETAILED_LOGS = process.env.NODE_ENV === 'development';
@@ -219,8 +220,21 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
 const TABELAS_COM_PRODUTO_NOME = [
   'caixa_de_apoio_alif_imagens',
   'caixa_de_apoio_cervical_imagens',
-  'caixa_de_apoio_lombar_imagens',
 ];
+
+/**
+ * Tabelas com estrutura especial (nome, url_imagem, produto_slug)
+ * Diferente do padrão (produto_id/produto_nome, url, principal)
+ */
+const TABELAS_ESTRUTURA_ESPECIAL_API: Record<string, {
+  campoUrl: string;           // Campo que contém a URL da imagem
+  produtoSlugPrincipal?: string;  // Produto slug para usar como imagem do card principal
+}> = {
+  'caixa_de_apoio_lombar_imagens': {
+    campoUrl: 'url_imagem',
+    produtoSlugPrincipal: 'lamina-afastador-cloward-lombar',
+  },
+};
 
 /**
  * Conta itens únicos em uma tabela (sem duplicados)
@@ -283,10 +297,72 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
       return null;
     }
 
+    // Verificar se a tabela tem estrutura especial
+    const estruturaEspecial = TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagens];
+
     // Verificar se a tabela usa produto_nome em vez de produto_id
     const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens);
 
-    console.log(`[buscarImagemDaCaixa] Buscando em tabela: "${tabelaImagens}" (usaProdutoNome: ${usaProdutoNome})`);
+    console.log(`[buscarImagemDaCaixa] Buscando em tabela: "${tabelaImagens}" (estruturaEspecial: ${!!estruturaEspecial}, usaProdutoNome: ${usaProdutoNome})`);
+
+    // Tratamento especial para tabelas com estrutura diferente
+    if (estruturaEspecial) {
+      const campoUrl = estruturaEspecial.campoUrl;
+
+      // Se tem produto_slug principal definido, buscar especificamente
+      if (estruturaEspecial.produtoSlugPrincipal) {
+        const { data: imagemPrincipal, error: erroPrincipal } = await supabase
+          .from(tabelaImagens)
+          .select('*')
+          .eq('produto_slug', estruturaEspecial.produtoSlugPrincipal)
+          .eq('ordem', 1)
+          .limit(1);
+
+        if (!erroPrincipal && imagemPrincipal && imagemPrincipal.length > 0) {
+          const registro = imagemPrincipal[0] as unknown as Record<string, unknown>;
+          const url = registro[campoUrl] as string | undefined;
+          if (url) {
+            console.log(`[buscarImagemDaCaixa] Usando imagem principal do produto_slug "${estruturaEspecial.produtoSlugPrincipal}": ${url}`);
+            return url;
+          }
+        }
+      }
+
+      // Fallback: buscar qualquer imagem com ordem 1
+      const { data: primeiraImagem, error: erroPrimeira } = await supabase
+        .from(tabelaImagens)
+        .select('*')
+        .eq('ordem', 1)
+        .limit(1);
+
+      if (!erroPrimeira && primeiraImagem && primeiraImagem.length > 0) {
+        const registro = primeiraImagem[0] as unknown as Record<string, unknown>;
+        const url = registro[campoUrl] as string | undefined;
+        if (url) {
+          console.log(`[buscarImagemDaCaixa] Usando primeira imagem (ordem 1): ${url}`);
+          return url;
+        }
+      }
+
+      // Fallback final: buscar qualquer imagem
+      const { data: qualquerImagem, error: erroQualquer } = await supabase
+        .from(tabelaImagens)
+        .select('*')
+        .order('ordem', { ascending: true })
+        .limit(1);
+
+      if (!erroQualquer && qualquerImagem && qualquerImagem.length > 0) {
+        const registro = qualquerImagem[0] as unknown as Record<string, unknown>;
+        const url = registro[campoUrl] as string | undefined;
+        if (url) {
+          console.log(`[buscarImagemDaCaixa] Usando primeira imagem disponível: ${url}`);
+          return url;
+        }
+      }
+
+      console.log(`[buscarImagemDaCaixa] Nenhuma imagem válida em "${tabelaImagens}" (estrutura especial)`);
+      return null;
+    }
 
     // Estratégia 1: Buscar imagem marcada como principal
     const { data: imagemPrincipal, error: erroPrincipal } = await supabase
@@ -482,11 +558,17 @@ export async function getInstrumentosDaTabela(
     const instrumentosUnicos = removerDuplicados(instrumentosNormalizados);
     console.log(`[getInstrumentosDaTabela] Após remover duplicados: ${instrumentosUnicos.length}`);
 
-    // Aplicar paginação nos itens únicos
-    const offset = (pagina - 1) * porPagina;
-    const instrumentosPaginados = instrumentosUnicos.slice(offset, offset + porPagina);
+    // FILTRAR produtos ocultos para esta tabela específica
+    const instrumentosFiltrados = instrumentosUnicos.filter(
+      (item: any) => !produtoDeveSerOcultoDaTabela(item.nome, nomeTabela)
+    );
+    console.log(`[getInstrumentosDaTabela] Após filtrar ocultos: ${instrumentosFiltrados.length}`);
 
-    const total = instrumentosUnicos.length;
+    // Aplicar paginação nos itens filtrados
+    const offset = (pagina - 1) * porPagina;
+    const instrumentosPaginados = instrumentosFiltrados.slice(offset, offset + porPagina);
+
+    const total = instrumentosFiltrados.length;
     const totalPaginas = Math.ceil(total / porPagina);
 
     console.log(`[getInstrumentosDaTabela] Retornando página ${pagina} com ${instrumentosPaginados.length} itens`);
