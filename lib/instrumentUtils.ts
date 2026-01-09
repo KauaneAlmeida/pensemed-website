@@ -15,9 +15,38 @@ const PRODUTOS_OCULTOS: (string | number)[] = [
  */
 const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
   'caixa de apoio lombar': [
-    'afastador abdominal all path - omni tract',
+    'afastador abdominal all path',
   ],
 };
+
+/**
+ * Redirecionamento de produtos para suas tabelas/caixas de origem
+ * Usado quando um produto aparece em uma tabela mas deve linkar para outra
+ * Chave: substring do nome do produto (lowercase)
+ * Valor: { tabela: nome da tabela de destino, slug: slug para URL }
+ */
+const PRODUTO_REDIRECT: Record<string, { tabela: string; slug: string }> = {
+  'afastador abdominal all path': {
+    tabela: 'afastador abdominal all path – omni tract',
+    slug: 'YWZhc3RhZG9yIGFiZG9taW5hbCBhbGwgcGF0aCDigJMgb21uaSB0cmFjdA', // base64url de 'afastador abdominal all path – omni tract'
+  },
+};
+
+/**
+ * Verifica se um produto deve ser redirecionado para outra tabela/caixa
+ * Retorna o novo slug se houver redirect, ou null se não houver
+ */
+export function getProdutoRedirect(nomeProduto: string): { tabela: string; slug: string } | null {
+  const produtoLower = nomeProduto.toLowerCase().trim();
+
+  for (const [pattern, redirect] of Object.entries(PRODUTO_REDIRECT)) {
+    if (produtoLower.includes(pattern)) {
+      return redirect;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Verifica se um produto deve ser ocultado da listagem

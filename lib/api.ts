@@ -86,6 +86,83 @@ function removerDuplicados<T extends { nome: string; codigo?: string | null }>(i
 }
 
 /**
+ * Busca os IDs/nomes dos produtos que têm imagem cadastrada em uma tabela de imagens
+ * @param tabelaImagens - Nome da tabela de imagens (ex: caixa_cervical_translucente_imagens)
+ * @returns Set com produto_id ou produto_nome dos produtos com imagem
+ */
+async function getProdutosComImagem(tabelaImagens: string): Promise<Set<string | number>> {
+  const produtosComImagem = new Set<string | number>();
+
+  try {
+    // Verificar se a tabela usa produto_nome em vez de produto_id
+    const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens);
+
+    // Verificar se é tabela com estrutura especial
+    const estruturaEspecial = TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagens];
+
+    let campo = 'produto_id';
+    if (usaProdutoNome) {
+      campo = 'produto_nome';
+    } else if (estruturaEspecial) {
+      campo = 'nome'; // Tabelas especiais usam 'nome'
+    }
+
+    const { data, error } = await supabase
+      .from(tabelaImagens)
+      .select(campo);
+
+    if (error) {
+      console.log(`[getProdutosComImagem] Erro ao buscar em "${tabelaImagens}":`, error.message);
+      return produtosComImagem;
+    }
+
+    if (data) {
+      data.forEach((item: any) => {
+        const valor = item[campo];
+        if (valor !== null && valor !== undefined) {
+          produtosComImagem.add(valor);
+        }
+      });
+    }
+
+    console.log(`[getProdutosComImagem] ${tabelaImagens}: ${produtosComImagem.size} produtos com imagem`);
+  } catch (err) {
+    console.error(`[getProdutosComImagem] Erro:`, err);
+  }
+
+  return produtosComImagem;
+}
+
+/**
+ * Ordena produtos priorizando os que têm imagem
+ * @param produtos - Array de produtos para ordenar
+ * @param produtosComImagem - Set com IDs/nomes dos produtos que têm imagem
+ * @param campoId - Campo usado para verificar se tem imagem ('id' ou 'nome')
+ * @returns Array ordenado: primeiro os com imagem (alfabético), depois sem imagem (alfabético)
+ */
+function ordenarPorImagem<T extends { nome: string; id?: string | number }>(
+  produtos: T[],
+  produtosComImagem: Set<string | number>,
+  campoId: 'id' | 'nome' = 'id'
+): T[] {
+  return produtos.sort((a, b) => {
+    const aTemImagem = campoId === 'id'
+      ? produtosComImagem.has(a.id!)
+      : produtosComImagem.has(a.nome) || produtosComImagem.has(a.nome.toLowerCase());
+    const bTemImagem = campoId === 'id'
+      ? produtosComImagem.has(b.id!)
+      : produtosComImagem.has(b.nome) || produtosComImagem.has(b.nome.toLowerCase());
+
+    // Primeiro critério: produtos com imagem vêm primeiro
+    if (aTemImagem && !bTemImagem) return -1;
+    if (!aTemImagem && bTemImagem) return 1;
+
+    // Segundo critério: ordenação alfabética por nome
+    return a.nome.localeCompare(b.nome, 'pt-BR');
+  });
+}
+
+/**
  * Busca produtos por categoria
  * @param categoria - Nome da categoria (ex: "Equipamentos Médicos")
  * @returns Array de produtos da categoria especificada
@@ -229,10 +306,12 @@ const TABELAS_COM_PRODUTO_NOME = [
 const TABELAS_ESTRUTURA_ESPECIAL_API: Record<string, {
   campoUrl: string;           // Campo que contém a URL da imagem
   produtoSlugPrincipal?: string;  // Produto slug para usar como imagem do card principal
+  imagemCardFixa?: string;    // URL fixa para o card principal (quando a busca dinâmica não funciona)
 }> = {
   'caixa_de_apoio_lombar_imagens': {
     campoUrl: 'url_imagem',
     produtoSlugPrincipal: 'lamina-afastador-cloward-lombar',
+    imagemCardFixa: 'https://lrasuvrzyzmmjumxrhzv.supabase.co/storage/v1/object/public/instrumentos/caixa-de-apoio-lombar/caixa-apoio-lombar/01.jpg',
   },
 };
 
@@ -307,6 +386,12 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
 
     // Tratamento especial para tabelas com estrutura diferente
     if (estruturaEspecial) {
+      // Se tem URL fixa definida, usar diretamente
+      if (estruturaEspecial.imagemCardFixa) {
+        console.log(`[buscarImagemDaCaixa] Usando imagem fixa para "${nomeTabela}": ${estruturaEspecial.imagemCardFixa}`);
+        return estruturaEspecial.imagemCardFixa;
+      }
+
       const campoUrl = estruturaEspecial.campoUrl;
 
       // Se tem produto_slug principal definido, buscar especificamente
@@ -478,8 +563,18 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
       }
     }
 
-    // Ordenar por nome de exibição
-    caixas.sort((a, b) => a.nome_exibicao.localeCompare(b.nome_exibicao));
+    // Ordenar: primeiro caixas com imagem, depois alfabético
+    caixas.sort((a, b) => {
+      const aTemImagem = !!a.imagem_url;
+      const bTemImagem = !!b.imagem_url;
+
+      // Primeiro critério: caixas com imagem vêm primeiro
+      if (aTemImagem && !bTemImagem) return -1;
+      if (!aTemImagem && bTemImagem) return 1;
+
+      // Segundo critério: ordenação alfabética
+      return a.nome_exibicao.localeCompare(b.nome_exibicao, 'pt-BR');
+    });
 
     console.log(`[getCaixasCME] Total de caixas encontradas: ${caixas.length}`);
     return caixas;
@@ -564,9 +659,22 @@ export async function getInstrumentosDaTabela(
     );
     console.log(`[getInstrumentosDaTabela] Após filtrar ocultos: ${instrumentosFiltrados.length}`);
 
-    // Aplicar paginação nos itens filtrados
+    // ORDENAR por imagem: produtos com imagem primeiro, depois alfabético
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+    let instrumentosOrdenados = instrumentosFiltrados;
+
+    if (tabelaImagens) {
+      const produtosComImagem = await getProdutosComImagem(tabelaImagens);
+      // Verificar se a tabela usa produto_nome
+      const usaNome = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens) ||
+                      TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagens];
+      instrumentosOrdenados = ordenarPorImagem(instrumentosFiltrados, produtosComImagem, usaNome ? 'nome' : 'id');
+      console.log(`[getInstrumentosDaTabela] Ordenado por imagem: ${produtosComImagem.size} produtos com imagem`);
+    }
+
+    // Aplicar paginação nos itens ordenados
     const offset = (pagina - 1) * porPagina;
-    const instrumentosPaginados = instrumentosFiltrados.slice(offset, offset + porPagina);
+    const instrumentosPaginados = instrumentosOrdenados.slice(offset, offset + porPagina);
 
     const total = instrumentosFiltrados.length;
     const totalPaginas = Math.ceil(total / porPagina);
@@ -858,8 +966,18 @@ export async function getCategoriasEquipamentos(): Promise<CategoriaEquipamento[
       }
     }
 
-    // Ordenar por nome
-    categorias.sort((a, b) => a.nome_exibicao.localeCompare(b.nome_exibicao));
+    // Ordenar: primeiro categorias com imagem, depois alfabético
+    categorias.sort((a, b) => {
+      const aTemImagem = !!a.imagem_url;
+      const bTemImagem = !!b.imagem_url;
+
+      // Primeiro critério: categorias com imagem vêm primeiro
+      if (aTemImagem && !bTemImagem) return -1;
+      if (!aTemImagem && bTemImagem) return 1;
+
+      // Segundo critério: ordenação alfabética
+      return a.nome_exibicao.localeCompare(b.nome_exibicao, 'pt-BR');
+    });
 
     console.log(`[getCategoriasEquipamentos] Total de categorias: ${categorias.length}`);
     return categorias;
@@ -919,9 +1037,19 @@ export async function getEquipamentosDaTabela(
     const equipamentosUnicos = removerDuplicados(equipamentosNormalizados);
     console.log(`[getEquipamentosDaTabela] Após remover duplicados: ${equipamentosUnicos.length}`);
 
-    // Aplicar paginação nos itens únicos
+    // ORDENAR por imagem: produtos com imagem primeiro, depois alfabético
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+    let equipamentosOrdenados = equipamentosUnicos;
+
+    if (tabelaImagens) {
+      const produtosComImagem = await getProdutosComImagem(tabelaImagens);
+      equipamentosOrdenados = ordenarPorImagem(equipamentosUnicos, produtosComImagem, 'id');
+      console.log(`[getEquipamentosDaTabela] Ordenado por imagem: ${produtosComImagem.size} produtos com imagem`);
+    }
+
+    // Aplicar paginação nos itens ordenados
     const offset = (pagina - 1) * porPagina;
-    const equipamentosPaginados = equipamentosUnicos.slice(offset, offset + porPagina);
+    const equipamentosPaginados = equipamentosOrdenados.slice(offset, offset + porPagina);
 
     const total = equipamentosUnicos.length;
     const totalPaginas = Math.ceil(total / porPagina);
@@ -1083,9 +1211,12 @@ export async function getTodosProdutosCatalogo(
   console.log('[getTodosProdutosCatalogo] Iniciando busca...');
   console.log('[getTodosProdutosCatalogo] Filtros:', { pagina, porPagina, busca, categoria, caixaSlug, ordenacao });
 
-  const todosProdutos: ProdutoCatalogo[] = [];
+  const todosProdutos: (ProdutoCatalogo & { temImagemNaTabela?: boolean })[] = [];
   const contagemCategorias: Map<string, number> = new Map();
   const contagemCaixas: Map<string, { nome: string; slug: string; categoria: string; total: number }> = new Map();
+
+  // Cache de produtos com imagem por tabela (para evitar múltiplas queries)
+  const cacheImagensPorTabela: Map<string, Set<string | number>> = new Map();
 
   try {
     // Buscar de todas as tabelas CME
@@ -1096,6 +1227,16 @@ export async function getTodosProdutosCatalogo(
           .from(nomeTabela)
           .select('*')
           .order('nome', { ascending: true });
+
+        // Buscar quais produtos têm imagem nesta tabela
+        const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+        let produtosComImagem: Set<string | number> = new Set();
+        if (tabelaImagens && !cacheImagensPorTabela.has(tabelaImagens)) {
+          produtosComImagem = await getProdutosComImagem(tabelaImagens);
+          cacheImagensPorTabela.set(tabelaImagens, produtosComImagem);
+        } else if (tabelaImagens) {
+          produtosComImagem = cacheImagensPorTabela.get(tabelaImagens) || new Set();
+        }
 
         if (error) {
           console.warn(`[getTodosProdutosCatalogo] Tabela CME "${nomeTabela}" erro:`, error.message);
@@ -1111,7 +1252,17 @@ export async function getTodosProdutosCatalogo(
         const caixaNome = tabelaToNomeExibicao(nomeTabela);
         const caixaSlugAtual = tabelaToSlug(nomeTabela);
 
+        // Determinar como verificar se produto tem imagem
+        const usaNomeCME = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens || '') ||
+                          TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagens || ''];
+
         data.forEach((item: any, index: number) => {
+          // Verificar se o produto deve ser ocultado desta tabela específica
+          if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) {
+            console.log(`[getTodosProdutosCatalogo] Produto oculto: "${item.nome}" da tabela "${nomeTabela}"`);
+            return; // Pular este produto
+          }
+
           let imagemUrl = item.imagem_url || item.imagem || null;
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
@@ -1127,9 +1278,19 @@ export async function getTodosProdutosCatalogo(
             }
           }
 
+          // Verificar se o produto tem imagem na tabela de imagens
+          const produtoId = item.id ?? (index + 1);
+          let temImagemNaTabela = false;
+          if (usaNomeCME) {
+            temImagemNaTabela = produtosComImagem.has(item.nome) ||
+                               produtosComImagem.has(item.nome?.toLowerCase());
+          } else {
+            temImagemNaTabela = produtosComImagem.has(produtoId);
+          }
+
           todosProdutos.push({
             // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
-            id: `cme-${nomeTabela}-${item.id ?? (index + 1)}`,
+            id: `cme-${nomeTabela}-${produtoId}`,
             nome: item.nome,
             codigo,
             descricao: item.descricao || null,
@@ -1138,6 +1299,7 @@ export async function getTodosProdutosCatalogo(
             caixa_tabela: nomeTabela,
             caixa_nome: caixaNome,
             caixa_slug: caixaSlugAtual,
+            temImagemNaTabela,
           });
         });
 
@@ -1163,6 +1325,16 @@ export async function getTodosProdutosCatalogo(
           .select('*')
           .order('nome', { ascending: true });
 
+        // Buscar quais equipamentos têm imagem nesta tabela
+        const tabelaImagensEquip = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+        let equipComImagem: Set<string | number> = new Set();
+        if (tabelaImagensEquip && !cacheImagensPorTabela.has(tabelaImagensEquip)) {
+          equipComImagem = await getProdutosComImagem(tabelaImagensEquip);
+          cacheImagensPorTabela.set(tabelaImagensEquip, equipComImagem);
+        } else if (tabelaImagensEquip) {
+          equipComImagem = cacheImagensPorTabela.get(tabelaImagensEquip) || new Set();
+        }
+
         if (error) {
           console.warn(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}" erro:`, error.message);
           continue;
@@ -1177,16 +1349,30 @@ export async function getTodosProdutosCatalogo(
         const caixaNome = tabelaToNomeExibicao(nomeTabela);
         const caixaSlugAtual = tabelaToSlug(nomeTabela);
 
+        // Determinar como verificar se equipamento tem imagem
+        const usaNomeEquip = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagensEquip || '') ||
+                            TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagensEquip || ''];
+
         data.forEach((item: any, index: number) => {
           let imagemUrl = item.imagem_url || item.imagem || null;
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
           // Gerar código/ID para equipamentos
           // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
-          let idEquipamento = String(item.id ?? (index + 1));
+          const produtoIdEquip = item.id ?? (index + 1);
+          let idEquipamento = String(produtoIdEquip);
+
+          // Verificar se o equipamento tem imagem na tabela de imagens
+          let temImagemNaTabela = false;
+          if (usaNomeEquip) {
+            temImagemNaTabela = equipComImagem.has(item.nome) ||
+                               equipComImagem.has(item.nome?.toLowerCase());
+          } else {
+            temImagemNaTabela = equipComImagem.has(produtoIdEquip);
+          }
 
           todosProdutos.push({
-            id: `equip-${nomeTabela}-${item.id ?? (index + 1)}`,
+            id: `equip-${nomeTabela}-${produtoIdEquip}`,
             nome: item.nome,
             codigo: idEquipamento,
             descricao: item.descricao || null,
@@ -1195,6 +1381,7 @@ export async function getTodosProdutosCatalogo(
             caixa_tabela: nomeTabela,
             caixa_nome: caixaNome,
             caixa_slug: caixaSlugAtual,
+            temImagemNaTabela,
           });
         });
 
@@ -1217,14 +1404,34 @@ export async function getTodosProdutosCatalogo(
         .from('produtos_opme')
         .select('*');
 
+      // Buscar quais produtos OPME têm imagem
+      let opmeComImagem: Set<string | number> = new Set();
+      if (!cacheImagensPorTabela.has('produtos_opme_imagens')) {
+        // Buscar produto_id dos produtos que têm imagem
+        const { data: imagensOPME } = await supabase
+          .from('produtos_opme_imagens')
+          .select('produto_id');
+        if (imagensOPME) {
+          imagensOPME.forEach((img: any) => {
+            if (img.produto_id) opmeComImagem.add(img.produto_id);
+          });
+        }
+        cacheImagensPorTabela.set('produtos_opme_imagens', opmeComImagem);
+      } else {
+        opmeComImagem = cacheImagensPorTabela.get('produtos_opme_imagens') || new Set();
+      }
+
       if (error) {
         console.warn(`[getTodosProdutosCatalogo] Tabela OPME erro:`, error.message);
       } else if (data && data.length > 0) {
         console.log(`[getTodosProdutosCatalogo] Tabela OPME: ${data.length} itens`);
 
         data.forEach((item: any, index: number) => {
-          const produtoCatalogo: ProdutoCatalogo = {
-            id: `opme-${item.id || index}`,
+          const produtoIdOPME = item.id || index;
+          const temImagemNaTabela = opmeComImagem.has(produtoIdOPME);
+
+          const produtoCatalogo: ProdutoCatalogo & { temImagemNaTabela?: boolean } = {
+            id: `opme-${produtoIdOPME}`,
             nome: item.nome || 'Produto OPME',
             codigo: item.registro_anvisa || null,
             descricao: item.descricao || item.aplicacao || null,
@@ -1233,6 +1440,7 @@ export async function getTodosProdutosCatalogo(
             caixa_tabela: 'produtos_opme',
             caixa_nome: item.categoria || 'OPME',
             caixa_slug: 'opme',
+            temImagemNaTabela,
           };
           todosProdutos.push(produtoCatalogo);
         });
@@ -1339,8 +1547,18 @@ export async function getTodosProdutosCatalogo(
       produtosFiltrados = produtosFiltrados.filter(p => p.caixa_slug === caixaSlug);
     }
 
-    // Ordenação
+    // Ordenação: priorizar produtos com imagem, depois ordenar conforme solicitado
     produtosFiltrados.sort((a, b) => {
+      // Primeiro critério: produtos com imagem vêm primeiro (exceto quando há busca)
+      // Usar temImagemNaTabela que verifica na tabela de imagens real
+      if (!busca) {
+        const aTemImagem = !!(a as any).temImagemNaTabela;
+        const bTemImagem = !!(b as any).temImagemNaTabela;
+        if (aTemImagem && !bTemImagem) return -1;
+        if (!aTemImagem && bTemImagem) return 1;
+      }
+
+      // Segundo critério: ordenação conforme solicitado
       switch (ordenacao) {
         case 'nome-desc':
           return b.nome.localeCompare(a.nome, 'pt-BR');

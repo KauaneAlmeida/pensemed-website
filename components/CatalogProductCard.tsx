@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ProdutoCatalogo } from '@/lib/api';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
-import { codigoValido } from '@/lib/instrumentUtils';
+import { codigoValido, getProdutoRedirect } from '@/lib/instrumentUtils';
 import { getProductImages, getOPMEProductImages } from '@/hooks/useProductImages';
 
 // Função para gerar URL do produto
@@ -16,12 +16,16 @@ function getProductUrl(produto: ProdutoCatalogo): string {
   const partes = produto.id.split('-');
   const idNumerico = partes[partes.length - 1];
 
+  // Verificar se o produto deve ser redirecionado para outra caixa
+  const redirect = getProdutoRedirect(produto.nome);
+  const caixaSlug = redirect ? redirect.slug : produto.caixa_slug;
+
   if (produto.categoria_principal === 'Equipamentos Médicos') {
     return `/equipamentos-medicos/${produto.caixa_slug}/${idNumerico}`;
   } else if (produto.categoria_principal === 'OPME') {
     return `/categorias/opme/${idNumerico}`;
   } else {
-    return `/instrumentacao-cme/${produto.caixa_slug}/${idNumerico}`;
+    return `/instrumentacao-cme/${caixaSlug}/${idNumerico}`;
   }
 }
 
