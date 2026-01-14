@@ -240,3 +240,149 @@ export function getBadgeVariacoes(count: number): string {
   if (count <= 1) return '';
   return `${count} variações`;
 }
+
+/**
+ * Configuração de agrupamentos especiais por tabela
+ * Define padrões de agrupamento mais complexos que o padrão de variações simples
+ */
+interface AgrupamentoEspecial {
+  // Regex para identificar produtos que pertencem a este grupo
+  padrao: RegExp;
+  // Função para extrair o identificador do grupo (ex: "18mm" em "Afastador MIS 18mm x 50mm")
+  extrairGrupo: (nome: string) => string | null;
+  // Função para extrair a variação (ex: "x50mm" em "Afastador MIS 18mm x 50mm")
+  extrairVariacao: (nome: string) => string | null;
+  // Nome base do grupo (sem a parte variável)
+  nomeBase: string;
+}
+
+const AGRUPAMENTOS_POR_TABELA: Record<string, AgrupamentoEspecial[]> = {
+  'caixa baioneta mis': [
+    {
+      // Afastador MIS Starlet System 18mm x 50mm -> agrupa por diâmetro (18mm, 22mm, 26mm)
+      padrao: /afastador\s+mis\s+starlet\s+system\s+(\d+mm)\s*x\s*(\d+mm)/i,
+      extrairGrupo: (nome: string) => {
+        const match = nome.match(/afastador\s+mis\s+starlet\s+system\s+(\d+mm)/i);
+        return match ? match[1] : null;
+      },
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/afastador\s+mis\s+starlet\s+system\s+\d+mm\s*x\s*(\d+mm)/i);
+        return match ? `x${match[1]}` : null;
+      },
+      nomeBase: 'Afastador MIS Starlet System',
+    },
+    {
+      // Cureta Baioneta Reta MIS Starlet System N°0000 -> agrupa por tipo (Reta/Angulada)
+      padrao: /cureta\s+baioneta\s+(reta|angulada)\s+mis\s+starlet\s+system/i,
+      extrairGrupo: (nome: string) => {
+        const match = nome.match(/cureta\s+baioneta\s+(reta|angulada)/i);
+        return match ? match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase() : null;
+      },
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/n[°º]?\s*(\d+)/i);
+        return match ? `N°${match[1]}` : null;
+      },
+      nomeBase: 'Cureta Baioneta',
+    },
+  ],
+};
+
+/**
+ * Aplica agrupamentos especiais para uma tabela específica
+ * Retorna os itens já agrupados de acordo com as regras da tabela
+ */
+export function aplicarAgrupamentosEspeciais<T extends InstrumentoBase>(
+  itens: T[],
+  nomeTabela: string
+): InstrumentoAgrupado[] {
+  const tabelaLower = nomeTabela.toLowerCase();
+  const agrupamentosEspeciais = AGRUPAMENTOS_POR_TABELA[tabelaLower];
+
+  // Se não há agrupamentos especiais, usar o agrupamento padrão
+  if (!agrupamentosEspeciais || agrupamentosEspeciais.length === 0) {
+    return agruparInstrumentos(itens);
+  }
+
+  // Separar itens que têm agrupamento especial dos que não têm
+  const itensEspeciais: Map<string, {
+    config: AgrupamentoEspecial;
+    grupo: string;
+    itens: (T & { variacaoTexto?: string; tipoVariacao?: 'numero' | 'medida' | null })[];
+  }> = new Map();
+
+  const itensNormais: T[] = [];
+
+  for (const item of itens) {
+    let encontrouAgrupamento = false;
+
+    for (const config of agrupamentosEspeciais) {
+      if (config.padrao.test(item.nome)) {
+        const grupo = config.extrairGrupo(item.nome);
+        const variacao = config.extrairVariacao(item.nome);
+
+        if (grupo) {
+          const chave = `${config.nomeBase}|${grupo}`;
+
+          if (!itensEspeciais.has(chave)) {
+            itensEspeciais.set(chave, {
+              config,
+              grupo,
+              itens: [],
+            });
+          }
+
+          itensEspeciais.get(chave)!.itens.push({
+            ...item,
+            variacaoTexto: variacao || undefined,
+            tipoVariacao: 'medida' as const,
+          });
+
+          encontrouAgrupamento = true;
+          break;
+        }
+      }
+    }
+
+    if (!encontrouAgrupamento) {
+      itensNormais.push(item);
+    }
+  }
+
+  // Converter grupos especiais em InstrumentoAgrupado
+  const resultado: InstrumentoAgrupado[] = [];
+
+  for (const [, grupoData] of itensEspeciais) {
+    const { config, grupo, itens: itensGrupo } = grupoData;
+
+    // Ordenar variações numericamente
+    itensGrupo.sort((a, b) => {
+      const numA = parseInt(a.variacaoTexto?.replace(/\D/g, '') || '0', 10);
+      const numB = parseInt(b.variacaoTexto?.replace(/\D/g, '') || '0', 10);
+      return numA - numB;
+    });
+
+    const primeiroItem = itensGrupo[0];
+    const nomeCompleto = `${config.nomeBase} ${grupo}`;
+
+    resultado.push({
+      id: primeiroItem.id,
+      nomeBase: nomeCompleto,
+      nome: nomeCompleto,
+      codigo: primeiroItem.codigo,
+      descricao: primeiroItem.descricao,
+      imagem: primeiroItem.imagem,
+      variacoes: itensGrupo,
+      temVariacoes: itensGrupo.length > 1,
+      tipoVariacao: 'medida',
+    });
+  }
+
+  // Agrupar itens normais com a função padrão
+  const itensNormaisAgrupados = agruparInstrumentos(itensNormais);
+
+  // Combinar e ordenar
+  const todosAgrupados = [...resultado, ...itensNormaisAgrupados];
+  todosAgrupados.sort((a, b) => a.nomeBase.localeCompare(b.nomeBase, 'pt-BR'));
+
+  return todosAgrupados;
+}

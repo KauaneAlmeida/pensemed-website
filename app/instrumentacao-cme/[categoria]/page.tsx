@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
-import { agruparInstrumentos, getBadgeVariacoes, InstrumentoAgrupado, codigoValido, produtoDeveSerOculto } from '@/lib/instrumentUtils';
+import { aplicarAgrupamentosEspeciais, getBadgeVariacoes, InstrumentoAgrupado, codigoValido, produtoDeveSerOculto } from '@/lib/instrumentUtils';
 import { ImageGalleryCompact, GalleryImage } from '@/components/ImageGallery';
 import { getProductImages } from '@/hooks/useProductImages';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -333,15 +333,15 @@ function CaixaCMEContent() {
         const instrumentosRaw: Instrumento[] = dados.instrumentos || [];
         setTotalOriginal(instrumentosRaw.length);
 
-        // Agrupa instrumentos com variações
-        const agrupados = agruparInstrumentos(instrumentosRaw.map(i => ({
+        // Agrupa instrumentos com variações (usa agrupamentos especiais se disponíveis para a tabela)
+        const agrupados = aplicarAgrupamentosEspeciais(instrumentosRaw.map(i => ({
           id: i.id,
           nome: i.nome,
           codigo: i.codigo,
           descricao: i.descricao,
           imagem: i.imagem_url, // Mapeia imagem_url para imagem (nome esperado pela interface)
           imagem_url: i.imagem_url // Mantém também como imagem_url para compatibilidade
-        })));
+        })), caixaAtual.nome_tabela);
 
         setInstrumentosAgrupados(agrupados);
         setInstrumentosFiltrados(agrupados);

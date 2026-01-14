@@ -1896,6 +1896,109 @@ function formatarVariacaoTexto(variacao: string, tipo: 'numero' | 'medida' | nul
 }
 
 /**
+ * Configuração de agrupamentos especiais por tabela para variações
+ * Define como identificar e agrupar produtos com padrões complexos
+ */
+interface ConfigAgrupamentoEspecial {
+  padrao: RegExp;
+  extrairGrupo: (nome: string) => string | null;
+  extrairVariacao: (nome: string) => string | null;
+}
+
+const AGRUPAMENTOS_ESPECIAIS_VARIACOES: Record<string, ConfigAgrupamentoEspecial[]> = {
+  'caixa baioneta mis': [
+    {
+      // Afastador MIS Starlet System 18mm x 50mm -> agrupa por diâmetro (18mm, 22mm, 26mm)
+      padrao: /afastador\s+mis\s+starlet\s+system\s+(\d+mm)\s*x\s*(\d+mm)/i,
+      extrairGrupo: (nome: string) => {
+        const match = nome.match(/afastador\s+mis\s+starlet\s+system\s+(\d+mm)/i);
+        return match ? match[1] : null;
+      },
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/afastador\s+mis\s+starlet\s+system\s+\d+mm\s*x\s*(\d+mm)/i);
+        return match ? `x${match[1]}` : null;
+      },
+    },
+    {
+      // Cureta Baioneta Reta/Angulada MIS Starlet System N°0000 -> agrupa por tipo
+      padrao: /cureta\s+baioneta\s+(reta|angulada)\s+mis\s+starlet\s+system/i,
+      extrairGrupo: (nome: string) => {
+        const match = nome.match(/cureta\s+baioneta\s+(reta|angulada)/i);
+        return match ? match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase() : null;
+      },
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/n[°º]?\s*(\d+)/i);
+        return match ? `N°${match[1]}` : null;
+      },
+    },
+  ],
+};
+
+/**
+ * Busca variações usando agrupamentos especiais (para produtos como Afastador MIS, Cureta Baioneta)
+ */
+function buscarVariacoesEspeciais(
+  instrumentoAtual: any,
+  todosInstrumentos: any[],
+  nomeTabela: string
+): VariacaoInstrumento[] {
+  const tabelaLower = nomeTabela.toLowerCase();
+  const configs = AGRUPAMENTOS_ESPECIAIS_VARIACOES[tabelaLower];
+
+  if (!configs) return [];
+
+  // Verificar se o instrumento atual corresponde a algum padrão especial
+  for (const config of configs) {
+    if (config.padrao.test(instrumentoAtual.nome)) {
+      const grupoAtual = config.extrairGrupo(instrumentoAtual.nome);
+      if (!grupoAtual) continue;
+
+      // Encontrar todos os instrumentos do mesmo grupo
+      const variacoes: VariacaoInstrumento[] = [];
+
+      for (let idx = 0; idx < todosInstrumentos.length; idx++) {
+        const item = todosInstrumentos[idx];
+
+        if (config.padrao.test(item.nome)) {
+          const grupoItem = config.extrairGrupo(item.nome);
+
+          // Verificar se pertence ao mesmo grupo
+          if (grupoItem === grupoAtual) {
+            const variacao = config.extrairVariacao(item.nome);
+            const itemId = item.id ?? (idx + 1);
+
+            let imagemUrl = item.imagem_url || item.imagem || null;
+            if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
+
+            variacoes.push({
+              id: itemId,
+              nome: item.nome,
+              codigo: item.codigo || null,
+              descricao: item.descricao || null,
+              imagem_url: imagemUrl,
+              variacaoTexto: variacao || 'Original',
+              tipoVariacao: 'medida',
+            });
+          }
+        }
+      }
+
+      // Ordenar variações numericamente
+      if (variacoes.length > 1) {
+        variacoes.sort((a, b) => {
+          const numA = parseInt(a.variacaoTexto.replace(/\D/g, '') || '0', 10);
+          const numB = parseInt(b.variacaoTexto.replace(/\D/g, '') || '0', 10);
+          return numA - numB;
+        });
+        return variacoes;
+      }
+    }
+  }
+
+  return [];
+}
+
+/**
  * Busca variações de um instrumento pelo nome base
  * Também busca por similaridade de nome quando o instrumento atual não tem padrão de variação
  * @param nomeTabela - Nome da tabela no Supabase
@@ -1935,6 +2038,13 @@ export async function getVariacoesInstrumento(
     if (!instrumentoAtual) {
       console.warn('[getVariacoesInstrumento] Instrumento atual não encontrado');
       return [];
+    }
+
+    // Verificar se é um agrupamento especial (ex: Afastador MIS, Cureta Baioneta)
+    const variacoesEspeciais = buscarVariacoesEspeciais(instrumentoAtual, todosInstrumentos, nomeTabela);
+    if (variacoesEspeciais.length > 0) {
+      console.log(`[getVariacoesInstrumento] Encontradas ${variacoesEspeciais.length} variações especiais`);
+      return variacoesEspeciais;
     }
 
     // Extrair nome base do instrumento atual
