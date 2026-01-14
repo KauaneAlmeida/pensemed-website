@@ -47,11 +47,21 @@ function FilterSection({
   );
 }
 
+// Interface estendida para incluir flag de produto único
+interface CategoriaEquipamentoExtendida extends CategoriaEquipamento {
+  isProdutoUnico?: boolean;
+}
+
 // Card de Categoria Equipamento
-function CategoriaCard({ categoria }: { categoria: CategoriaEquipamento }) {
+function CategoriaCard({ categoria }: { categoria: CategoriaEquipamentoExtendida }) {
+  // Se é produto único, vai direto para a página de detalhes
+  const href = categoria.isProdutoUnico
+    ? `/equipamentos-medicos/${categoria.slug}/1`
+    : `/equipamentos-medicos/${categoria.slug}`;
+
   return (
     <Link
-      href={`/equipamentos-medicos/${categoria.slug}`}
+      href={href}
       className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-[#2a7a8a]/30 hover:shadow-lg transition-all duration-300 block"
     >
       {/* Imagem */}
@@ -100,8 +110,8 @@ function EquipamentosMedicosContent() {
   const searchParams = useSearchParams();
 
   // Estados
-  const [categorias, setCategorias] = useState<CategoriaEquipamento[]>([]);
-  const [filteredCategorias, setFilteredCategorias] = useState<CategoriaEquipamento[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaEquipamentoExtendida[]>([]);
+  const [filteredCategorias, setFilteredCategorias] = useState<CategoriaEquipamentoExtendida[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 

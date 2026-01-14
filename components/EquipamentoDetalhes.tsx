@@ -31,6 +31,8 @@ interface EquipamentoDetalhesProps {
   descricaoCompleta: string;
   mostrarCodigo: boolean;
   nomeTabela?: string;
+  isProdutoUnico?: boolean;
+  totalItensCategoria?: number;
 }
 
 // Tipo para as tabs
@@ -44,6 +46,8 @@ export default function EquipamentoDetalhes({
   descricaoCompleta,
   mostrarCodigo,
   nomeTabela,
+  isProdutoUnico = false,
+  totalItensCategoria = 0,
 }: EquipamentoDetalhesProps) {
   const router = useRouter();
   const [variacaoSelecionada, setVariacaoSelecionada] = useState<VariacaoEquipamento | null>(
@@ -272,10 +276,10 @@ export default function EquipamentoDetalhes({
             className="w-full text-center justify-center py-3.5"
           />
           <Link
-            href={`/equipamentos-medicos/${categoriaSlug}`}
+            href={(isProdutoUnico || totalItensCategoria <= 1) ? '/equipamentos-medicos' : `/equipamentos-medicos/${categoriaSlug}`}
             className="w-full text-center px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors text-sm"
           >
-            Voltar para {nomeExibicao}
+            {(isProdutoUnico || totalItensCategoria <= 1) ? 'Voltar para Equipamentos Médicos' : `Voltar para ${nomeExibicao}`}
           </Link>
         </div>
 

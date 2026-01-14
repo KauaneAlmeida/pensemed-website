@@ -23,6 +23,7 @@ interface CategoriaEquipamento {
   nome_exibicao: string;
   slug: string;
   total_itens: number;
+  isProdutoUnico?: boolean;
 }
 
 // Componente de filtro accordion
@@ -275,6 +276,12 @@ function CategoriaEquipamentoContent() {
 
         setCategoria(categoriaAtual);
         setOutrasCategorias(categorias.filter(c => c.slug !== categoriaSlug));
+
+        // Se é produto único, redireciona direto para a página de detalhes
+        if (categoriaAtual.isProdutoUnico) {
+          router.push(`/equipamentos-medicos/${categoriaSlug}/1`);
+          return;
+        }
 
         const resEquipamentos = await fetch(`/api/equipamentos?tabela=${encodeURIComponent(categoriaAtual.nome_tabela)}`);
         const dados = await resEquipamentos.json();

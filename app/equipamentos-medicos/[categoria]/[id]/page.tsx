@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento } from '@/lib/api';
-import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento } from '@/lib/types';
+import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento, isEquipamentoProdutoUnico } from '@/lib/api';
+import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento, tabelaToNomeExibicao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
@@ -29,18 +29,98 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
   const nomeTabela = slugToTabela(slug);
   console.log('Nome tabela decodificado:', nomeTabela);
 
-  // Tenta buscar na tabela decodificada
+  // Verificar se é equipamento de produto único
+  const isProdutoUnico = isEquipamentoProdutoUnico(nomeTabela);
+  console.log('É produto único:', isProdutoUnico);
+
+  // Se for produto único, usar informações da categoria ao invés de buscar item individual
+  if (isProdutoUnico) {
+    console.log('Tratando como produto único - usando dados da categoria');
+
+    // Buscar imagem da tabela de imagens
+    let imagemUrl: string | null = null;
+    const tabelaImagens = nomeTabela.replace(/ /g, '_').replace(/\+/g, '').replace(/\./g, '').toLowerCase() + '_imagens';
+
+    try {
+      const { data: imagemData } = await supabase
+        .from(tabelaImagens.replace(/__/g, '_').replace(/_rf_pedal/, '_rf_pedal'))
+        .select('url')
+        .eq('ordem', 1)
+        .limit(1);
+
+      if (imagemData && imagemData.length > 0) {
+        imagemUrl = imagemData[0].url;
+      }
+    } catch {
+      // Tentar nome alternativo da tabela de imagens
+      try {
+        const { data: imagemData } = await supabase
+          .from('arthrocare_quantum_2_rf_pedal_imagens')
+          .select('url')
+          .eq('ordem', 1)
+          .limit(1);
+
+        if (imagemData && imagemData.length > 0) {
+          imagemUrl = imagemData[0].url;
+        }
+      } catch {
+        console.log('Tabela de imagens não encontrada');
+      }
+    }
+
+    // Buscar descrição combinando todos os itens da tabela
+    let descricaoCompleta = '';
+    try {
+      const { data: itens } = await supabase
+        .from(nomeTabela)
+        .select('descricao')
+        .limit(5);
+
+      if (itens && itens.length > 0) {
+        descricaoCompleta = itens
+          .map((item: any) => item.descricao)
+          .filter(Boolean)
+          .join('\n\n');
+      }
+    } catch {
+      console.log('Erro ao buscar descrições');
+    }
+
+    const nomeExibicao = tabelaToNomeExibicao(nomeTabela);
+
+    return {
+      equipamento: {
+        id: 1,
+        nome: nomeExibicao,
+        categoria: 'Equipamentos Médicos',
+        codigo: null,
+        descricao: descricaoCompleta || `${nomeExibicao} - Equipamento médico de alta tecnologia disponível para locação.`,
+        imagem_url: imagemUrl,
+      },
+      nomeTabela,
+      isProdutoUnico: true,
+    };
+  }
+
+  // Tenta buscar na tabela decodificada (fluxo normal)
   let equipamento = await getEquipamentoPorId(nomeTabela, id);
 
   if (equipamento) {
     console.log('Encontrado na tabela principal:', nomeTabela);
-    return { equipamento, nomeTabela };
+    return { equipamento, nomeTabela, isProdutoUnico: false };
   }
 
   console.log('Não encontrado na tabela principal, tentando fallback...');
 
   // Se não encontrou, tenta buscar em todas as tabelas de equipamentos
+  // Ignora tabelas de produtos únicos no fallback (não fazem sentido para busca por ID)
   for (const tabela of TABELAS_EQUIPAMENTOS) {
+    // Pular tabelas de produto único - elas não devem ser usadas em fallback
+    if (isEquipamentoProdutoUnico(tabela)) {
+      console.log(`Pulando tabela "${tabela}" (produto único)`);
+      continue;
+    }
+
     console.log('Tentando tabela:', tabela);
     try {
       let data: any = null;
@@ -54,9 +134,9 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
 
       if (!resultado.error && resultado.data) {
         data = resultado.data;
-      } else if (resultado.error?.code === '42703') {
-        // Tabela não tem coluna 'id', buscar por índice
-        console.log(`Tabela ${tabela} não tem coluna id, buscando por índice...`);
+      } else if (resultado.error?.code === '42703' || resultado.error?.code === 'PGRST116') {
+        // Tabela não tem coluna 'id' ou não encontrou, buscar por índice
+        console.log(`Tabela ${tabela} - buscando por índice...`);
         const { data: allData, error: allError } = await supabase
           .from(tabela)
           .select('*')
@@ -85,6 +165,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
             imagem_url: imagemUrl,
           },
           nomeTabela: tabela,
+          isProdutoUnico: false,
         };
       }
     } catch (err) {
@@ -94,7 +175,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
 
   console.log('Não encontrado em nenhuma tabela');
   console.log('=== FIM DEBUG ===');
-  return { equipamento: null, nomeTabela };
+  return { equipamento: null, nomeTabela, isProdutoUnico: false };
 }
 
 export async function generateMetadata({
@@ -126,7 +207,7 @@ export default async function EquipamentoDetailPage({
   const slugDecodificado = decodeURIComponent(params.categoria);
   const equipamentoId = parseInt(params.id, 10);
 
-  const { equipamento, nomeTabela } = await buscarEquipamentoComFallback(slugDecodificado, equipamentoId);
+  const { equipamento, nomeTabela, isProdutoUnico } = await buscarEquipamentoComFallback(slugDecodificado, equipamentoId);
 
   if (!equipamento) {
     console.error('[EquipamentoDetailPage] Equipamento não encontrado após fallback');
@@ -218,6 +299,8 @@ export default async function EquipamentoDetailPage({
           descricaoCompleta={descricaoCompleta}
           mostrarCodigo={mostrarCodigo}
           nomeTabela={nomeTabela}
+          isProdutoUnico={isProdutoUnico}
+          totalItensCategoria={categoria?.total_itens || 0}
         />
       </div>
 

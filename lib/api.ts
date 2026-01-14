@@ -937,8 +937,10 @@ export async function getCategoriasEquipamentos(): Promise<CategoriaEquipamento[
         }
 
         // Contar itens ÚNICOS (sem duplicados)
-        const totalUnicos = await contarItensUnicos(nomeTabela);
-        console.log(`[getCategoriasEquipamentos] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos`);
+        // Para produtos únicos (ex: Arthrocare), a contagem é sempre 1
+        const isProdutoUnico = isEquipamentoProdutoUnico(nomeTabela);
+        const totalUnicos = isProdutoUnico ? 1 : await contarItensUnicos(nomeTabela);
+        console.log(`[getCategoriasEquipamentos] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos${isProdutoUnico ? ' (produto único)' : ''}`);
 
         // Buscar imagem da tabela de imagens (1:N)
         let imagemUrl = await buscarImagemDaCaixa(nomeTabela);
@@ -1105,9 +1107,9 @@ export async function getEquipamentoPorId(
     if (error) {
       console.log(`[getEquipamentoPorId] Erro ao buscar por ID: ${error.message} (code: ${error.code})`);
 
-      // Se a tabela não tem coluna 'id' (erro 42703), buscar todos e usar índice
-      if (error.code === '42703') {
-        console.log(`[getEquipamentoPorId] Tabela não tem coluna id, buscando por índice...`);
+      // Se a tabela não tem coluna 'id' (erro 42703) ou não encontrou registro (PGRST116), buscar todos e usar índice
+      if (error.code === '42703' || error.code === 'PGRST116') {
+        console.log(`[getEquipamentoPorId] Tabela não tem coluna id ou não encontrou, buscando por índice...`);
         const { data: allData, error: allError } = await supabase
           .from(nomeTabela)
           .select('*')
@@ -1319,6 +1321,52 @@ export async function getTodosProdutosCatalogo(
     // Buscar de todas as tabelas de Equipamentos
     for (const nomeTabela of TABELAS_EQUIPAMENTOS) {
       try {
+        const caixaNome = tabelaToNomeExibicao(nomeTabela);
+        const caixaSlugAtual = tabelaToSlug(nomeTabela);
+
+        // Se é produto único, adicionar apenas 1 item representando a categoria
+        if (isEquipamentoProdutoUnico(nomeTabela)) {
+          console.log(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}": produto único`);
+
+          // Buscar imagem da tabela de imagens
+          let imagemUrl: string | null = null;
+          const tabelaImagens = nomeTabela.replace(/ /g, '_').replace(/\+/g, '').replace(/\./g, '').toLowerCase() + '_imagens';
+          try {
+            const { data: imagemData } = await supabase
+              .from(tabelaImagens.replace(/__/g, '_'))
+              .select('url')
+              .eq('ordem', 1)
+              .limit(1);
+            if (imagemData && imagemData.length > 0) {
+              imagemUrl = imagemData[0].url;
+            }
+          } catch {
+            // Ignorar erro de tabela de imagens
+          }
+
+          todosProdutos.push({
+            id: `equip-${nomeTabela}-1`,
+            nome: caixaNome,
+            codigo: '1',
+            descricao: `${caixaNome} - Equipamento médico de alta tecnologia disponível para locação.`,
+            imagem_url: imagemUrl,
+            categoria_principal: 'Equipamentos Médicos',
+            caixa_tabela: nomeTabela,
+            caixa_nome: caixaNome,
+            caixa_slug: caixaSlugAtual,
+            temImagemNaTabela: !!imagemUrl,
+          });
+
+          // Contagem = 1 para produto único
+          contagemCaixas.set(caixaSlugAtual, {
+            nome: caixaNome,
+            slug: caixaSlugAtual,
+            categoria: 'Equipamentos Médicos',
+            total: 1,
+          });
+          continue;
+        }
+
         // IMPORTANTE: Ordenar por nome para manter consistência com busca por índice
         const { data, error } = await supabase
           .from(nomeTabela)
@@ -1345,9 +1393,6 @@ export async function getTodosProdutosCatalogo(
         }
 
         console.log(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}": ${data.length} itens`);
-
-        const caixaNome = tabelaToNomeExibicao(nomeTabela);
-        const caixaSlugAtual = tabelaToSlug(nomeTabela);
 
         // Determinar como verificar se equipamento tem imagem
         const usaNomeEquip = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagensEquip || '') ||
@@ -1639,54 +1684,58 @@ export async function getProdutosRelacionados(
 
   try {
     // 1. Buscar outros produtos da MESMA CAIXA (mais relevante)
-    // IMPORTANTE: Ordenar por nome para consistência com busca por índice
-    const { data: mesmaCaixa, error: erroMesmaCaixa } = await supabase
-      .from(nomeTabela)
-      .select('*')
-      .order('nome', { ascending: true })
-      .limit(limite + 1); // +1 para compensar se o atual estiver incluído
+    // Se a tabela atual é de produto único, pular esta etapa (não mostrar itens internos)
+    if (!isEquipamentoProdutoUnico(nomeTabela)) {
+      // IMPORTANTE: Ordenar por nome para consistência com busca por índice
+      const { data: mesmaCaixa, error: erroMesmaCaixa } = await supabase
+        .from(nomeTabela)
+        .select('*')
+        .order('nome', { ascending: true })
+        .limit(limite + 1); // +1 para compensar se o atual estiver incluído
 
-    if (!erroMesmaCaixa && mesmaCaixa) {
-      mesmaCaixa.forEach((item: any, index: number) => {
-        // Excluir o produto atual
-        // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para consistência
-        const itemId = item.id ?? (index + 1);
-        if (String(itemId) === String(produtoAtualId)) return;
-        if (relacionados.length >= limite) return;
+      if (!erroMesmaCaixa && mesmaCaixa) {
+        mesmaCaixa.forEach((item: any, index: number) => {
+          // Excluir o produto atual
+          // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para consistência
+          const itemId = item.id ?? (index + 1);
+          if (String(itemId) === String(produtoAtualId)) return;
+          if (relacionados.length >= limite) return;
 
-        let imagemUrl = item.imagem_url || item.imagem || null;
-        if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
+          let imagemUrl = item.imagem_url || item.imagem || null;
+          if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
-        // Gerar código se não existir
-        let codigo = item.codigo;
-        if (!codigo) {
-          const matchCodigo = item.nome?.match(/^([A-Z]{2,4}\d{2,4})\s*[-–]\s*/i);
-          if (matchCodigo) {
-            codigo = matchCodigo[1].toUpperCase();
-          } else {
-            codigo = Buffer.from(item.nome || `item-${index}`, 'utf-8').toString('base64url');
+          // Gerar código se não existir
+          let codigo = item.codigo;
+          if (!codigo) {
+            const matchCodigo = item.nome?.match(/^([A-Z]{2,4}\d{2,4})\s*[-–]\s*/i);
+            if (matchCodigo) {
+              codigo = matchCodigo[1].toUpperCase();
+            } else {
+              codigo = Buffer.from(item.nome || `item-${index}`, 'utf-8').toString('base64url');
+            }
           }
-        }
 
-        relacionados.push({
-          id: itemId,
-          nome: item.nome,
-          codigo,
-          imagem_url: imagemUrl,
-          categoria,
-          caixa_tabela: nomeTabela,
-          caixa_nome: caixaNome,
-          caixa_slug: caixaSlug,
+          relacionados.push({
+            id: itemId,
+            nome: item.nome,
+            codigo,
+            imagem_url: imagemUrl,
+            categoria,
+            caixa_tabela: nomeTabela,
+            caixa_nome: caixaNome,
+            caixa_slug: caixaSlug,
+          });
         });
-      });
+      }
     }
 
     // 2. Se não tiver suficiente, buscar de outras caixas da mesma categoria
     if (relacionados.length < limite) {
       const faltam = limite - relacionados.length;
+      // Filtrar tabelas de produto único (não devem aparecer como relacionados individuais)
       const outrasCaixas = categoria === 'Instrumentação Cirúrgica CME'
         ? TABELAS_CME.filter(t => t !== nomeTabela)
-        : TABELAS_EQUIPAMENTOS.filter(t => t !== nomeTabela);
+        : TABELAS_EQUIPAMENTOS.filter(t => t !== nomeTabela && !isEquipamentoProdutoUnico(t));
 
       // Pegar algumas caixas aleatórias para variedade
       const caixasSelecionadas = outrasCaixas.sort(() => Math.random() - 0.5).slice(0, 3);
@@ -1969,11 +2018,38 @@ export async function getVariacoesInstrumento(
  * @param equipamentoId - ID do equipamento atual
  * @returns Array de variações do mesmo equipamento
  */
+/**
+ * Equipamentos que devem ser tratados como produto único (similar ao OPME)
+ * - Não mostra variações na página de detalhes
+ * - Redireciona direto da listagem para a página de detalhes
+ * Usar nome da tabela em minúsculas
+ */
+export const EQUIPAMENTOS_PRODUTO_UNICO: string[] = [
+  'arthrocare quantum 2 rf + pedal',
+  'gerador rf  surgimax plus + pedal',
+  'stryker 5400-50 core console + pedal',
+];
+
+/**
+ * Verifica se um equipamento deve ser tratado como produto único
+ * @param nomeTabela - Nome da tabela do equipamento
+ * @returns true se deve ser tratado como produto único
+ */
+export function isEquipamentoProdutoUnico(nomeTabela: string): boolean {
+  return EQUIPAMENTOS_PRODUTO_UNICO.includes(nomeTabela.toLowerCase().trim());
+}
+
 export async function getVariacoesEquipamento(
   nomeTabela: string,
   equipamentoId: number
 ): Promise<VariacaoInstrumento[]> {
   console.log(`[getVariacoesEquipamento] Buscando variações para ID ${equipamentoId} em "${nomeTabela}"`);
+
+  // Verificar se este equipamento deve ser tratado como produto único (sem variações)
+  if (isEquipamentoProdutoUnico(nomeTabela)) {
+    console.log(`[getVariacoesEquipamento] Equipamento "${nomeTabela}" configurado como produto único`);
+    return [];
+  }
 
   try {
     // Buscar TODOS os equipamentos da tabela (necessário para tabelas sem coluna 'id')
