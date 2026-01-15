@@ -92,14 +92,13 @@ function SearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [displayValue, setDisplayValue] = useState(initialValue);
+  const lastExternalValueRef = useRef(initialValue);
 
-  // Sincroniza apenas quando limpar filtros (valor vazio vindo de fora)
+  // Sincroniza quando o valor externo mudar (ex: limpar filtros)
   useEffect(() => {
-    if (initialValue === '' && displayValue !== '') {
-      setDisplayValue('');
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
+    if (initialValue !== lastExternalValueRef.current) {
+      lastExternalValueRef.current = initialValue;
+      setDisplayValue(initialValue);
     }
   }, [initialValue]);
 
@@ -119,7 +118,6 @@ function SearchInput({
   const handleClear = () => {
     setDisplayValue('');
     if (inputRef.current) {
-      inputRef.current.value = '';
       inputRef.current.focus();
     }
     if (timerRef.current) {
@@ -143,7 +141,7 @@ function SearchInput({
           ref={inputRef}
           id={inputId}
           type="text"
-          defaultValue={initialValue}
+          value={displayValue}
           onChange={handleChange}
           placeholder={placeholder}
           className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-medical focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
@@ -359,14 +357,43 @@ function CaixaCMEContent() {
     if (!busca) {
       setInstrumentosFiltrados(instrumentosAgrupados);
     } else {
-      const termo = busca.toLowerCase();
-      const filtrados = instrumentosAgrupados.filter(
-        i => i.nome.toLowerCase().includes(termo) ||
-             i.nomeBase.toLowerCase().includes(termo) ||
-             i.codigo?.toLowerCase().includes(termo) ||
-             i.descricao?.toLowerCase().includes(termo) ||
-             i.variacoes.some(v => v.nome.toLowerCase().includes(termo))
-      );
+      // Normaliza texto removendo acentos, caracteres especiais e múltiplos espaços
+      const normalizar = (texto: string) =>
+        texto
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // remove acentos
+          .replace(/[\/\-_.,:;()[\]{}'"]/g, ' ') // substitui caracteres especiais por espaço
+          .replace(/\s+/g, ' ') // normaliza múltiplos espaços
+          .trim();
+
+      const buscaNormalizada = normalizar(busca);
+      const palavrasBusca = buscaNormalizada.split(' ').filter(p => p.length > 1);
+
+      const filtrados = instrumentosAgrupados.filter(i => {
+        // Criar texto completo para busca
+        const textoCompleto = normalizar([
+          i.nome,
+          i.nomeBase,
+          i.codigo,
+          i.descricao,
+          ...i.variacoes.map(v => v.nome)
+        ].filter(Boolean).join(' '));
+
+        // Se busca tem só uma palavra, basta conter
+        if (palavrasBusca.length === 1) {
+          return textoCompleto.includes(palavrasBusca[0]);
+        }
+
+        // Para múltiplas palavras: busca completa ou pelo menos 70% das palavras
+        if (textoCompleto.includes(buscaNormalizada)) {
+          return true;
+        }
+
+        const palavrasEncontradas = palavrasBusca.filter(palavra => textoCompleto.includes(palavra));
+        return palavrasEncontradas.length / palavrasBusca.length >= 0.7;
+      });
+
       setInstrumentosFiltrados(filtrados);
     }
   }, [busca, instrumentosAgrupados]);

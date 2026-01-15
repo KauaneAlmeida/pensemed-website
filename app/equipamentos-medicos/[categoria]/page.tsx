@@ -85,14 +85,13 @@ function SearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [displayValue, setDisplayValue] = useState(initialValue);
+  const lastExternalValueRef = useRef(initialValue);
 
-  // Sincroniza apenas quando limpar filtros (valor vazio vindo de fora)
+  // Sincroniza quando o valor externo mudar (ex: limpar filtros)
   useEffect(() => {
-    if (initialValue === '' && displayValue !== '') {
-      setDisplayValue('');
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
+    if (initialValue !== lastExternalValueRef.current) {
+      lastExternalValueRef.current = initialValue;
+      setDisplayValue(initialValue);
     }
   }, [initialValue]);
 
@@ -112,7 +111,6 @@ function SearchInput({
   const handleClear = () => {
     setDisplayValue('');
     if (inputRef.current) {
-      inputRef.current.value = '';
       inputRef.current.focus();
     }
     if (timerRef.current) {
@@ -136,7 +134,7 @@ function SearchInput({
           ref={inputRef}
           id={inputId}
           type="text"
-          defaultValue={initialValue}
+          value={displayValue}
           onChange={handleChange}
           placeholder={placeholder}
           className={`w-full pl-11 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2a7a8a] focus:border-transparent text-base bg-white shadow-sm ${showClearButton && displayValue ? 'pr-10' : 'pr-4'}`}
@@ -320,14 +318,43 @@ function CategoriaEquipamentoContent() {
     if (!busca) {
       setEquipamentosFiltrados(equipamentosAgrupados);
     } else {
-      const termo = busca.toLowerCase();
-      const filtrados = equipamentosAgrupados.filter(
-        e => e.nome.toLowerCase().includes(termo) ||
-             e.nomeBase.toLowerCase().includes(termo) ||
-             e.codigo?.toLowerCase().includes(termo) ||
-             e.descricao?.toLowerCase().includes(termo) ||
-             e.variacoes.some(v => v.nome.toLowerCase().includes(termo))
-      );
+      // Normaliza texto removendo acentos, caracteres especiais e múltiplos espaços
+      const normalizar = (texto: string) =>
+        texto
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // remove acentos
+          .replace(/[\/\-_.,:;()[\]{}'"]/g, ' ') // substitui caracteres especiais por espaço
+          .replace(/\s+/g, ' ') // normaliza múltiplos espaços
+          .trim();
+
+      const buscaNormalizada = normalizar(busca);
+      const palavrasBusca = buscaNormalizada.split(' ').filter(p => p.length > 1);
+
+      const filtrados = equipamentosAgrupados.filter(e => {
+        // Criar texto completo para busca
+        const textoCompleto = normalizar([
+          e.nome,
+          e.nomeBase,
+          e.codigo,
+          e.descricao,
+          ...e.variacoes.map(v => v.nome)
+        ].filter(Boolean).join(' '));
+
+        // Se busca tem só uma palavra, basta conter
+        if (palavrasBusca.length === 1) {
+          return textoCompleto.includes(palavrasBusca[0]);
+        }
+
+        // Para múltiplas palavras: busca completa ou pelo menos 70% das palavras
+        if (textoCompleto.includes(buscaNormalizada)) {
+          return true;
+        }
+
+        const palavrasEncontradas = palavrasBusca.filter(palavra => textoCompleto.includes(palavra));
+        return palavrasEncontradas.length / palavrasBusca.length >= 0.7;
+      });
+
       setEquipamentosFiltrados(filtrados);
     }
   }, [busca, equipamentosAgrupados]);

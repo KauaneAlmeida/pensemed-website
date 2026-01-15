@@ -1532,50 +1532,70 @@ export async function getTodosProdutosCatalogo(
     // Aplicar filtros
     let produtosFiltrados = produtosUnicos;
 
-    // Filtro de busca avançado - procura em todos os campos
+    // Filtro de busca avançado - procura em todos os campos com tolerância a erros
     if (busca) {
-      const buscaLower = busca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const palavrasBusca = buscaLower.split(/\s+/).filter(p => p.length > 0);
+      // Função para normalizar texto (remove acentos, caracteres especiais, múltiplos espaços)
+      const normalizarParaBusca = (texto: string): string => {
+        return texto
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // remove acentos
+          .replace(/[\/\-_.,:;()[\]{}'"]/g, ' ') // substitui caracteres especiais por espaço
+          .replace(/\s+/g, ' ') // normaliza múltiplos espaços
+          .trim();
+      };
+
+      const buscaNormalizada = normalizarParaBusca(busca);
+      const palavrasBusca = buscaNormalizada.split(' ').filter(p => p.length > 1); // ignora palavras com 1 caractere
 
       produtosFiltrados = produtosFiltrados.filter(p => {
         // Criar texto completo para busca
-        const textoCompleto = [
+        const textoCompleto = normalizarParaBusca([
           p.nome,
           p.descricao,
           p.codigo,
           p.caixa_nome,
           p.categoria_principal
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '');
+        ].filter(Boolean).join(' '));
 
-        // Verificar se TODAS as palavras da busca estão no texto
-        return palavrasBusca.every(palavra => textoCompleto.includes(palavra));
+        // Se busca tem só uma palavra, basta conter
+        if (palavrasBusca.length === 1) {
+          return textoCompleto.includes(palavrasBusca[0]);
+        }
+
+        // Para múltiplas palavras: pelo menos 70% das palavras devem estar presentes
+        // OU o termo de busca completo está no texto
+        if (textoCompleto.includes(buscaNormalizada)) {
+          return true;
+        }
+
+        const palavrasEncontradas = palavrasBusca.filter(palavra => textoCompleto.includes(palavra));
+        const percentualEncontrado = palavrasEncontradas.length / palavrasBusca.length;
+
+        // Aceita se encontrou pelo menos 70% das palavras (permite erros/omissões)
+        return percentualEncontrado >= 0.7;
       });
 
       // Ordenar por relevância quando há busca
       produtosFiltrados.sort((a, b) => {
-        const nomeA = a.nome?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
-        const nomeB = b.nome?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || '';
+        const nomeA = normalizarParaBusca(a.nome || '');
+        const nomeB = normalizarParaBusca(b.nome || '');
 
         // Prioridade 1: Nome começa com o termo de busca
-        const aComeca = nomeA.startsWith(buscaLower) ? 1 : 0;
-        const bComeca = nomeB.startsWith(buscaLower) ? 1 : 0;
+        const aComeca = nomeA.startsWith(buscaNormalizada) ? 1 : 0;
+        const bComeca = nomeB.startsWith(buscaNormalizada) ? 1 : 0;
         if (aComeca !== bComeca) return bComeca - aComeca;
 
         // Prioridade 2: Nome contém o termo exato
-        const aContemExato = nomeA.includes(buscaLower) ? 1 : 0;
-        const bContemExato = nomeB.includes(buscaLower) ? 1 : 0;
+        const aContemExato = nomeA.includes(buscaNormalizada) ? 1 : 0;
+        const bContemExato = nomeB.includes(buscaNormalizada) ? 1 : 0;
         if (aContemExato !== bContemExato) return bContemExato - aContemExato;
 
         // Prioridade 3: Código igual ao termo
-        const codigoA = (a.codigo || '').toLowerCase();
-        const codigoB = (b.codigo || '').toLowerCase();
-        if (codigoA === buscaLower) return -1;
-        if (codigoB === buscaLower) return 1;
+        const codigoA = normalizarParaBusca(a.codigo || '');
+        const codigoB = normalizarParaBusca(b.codigo || '');
+        if (codigoA === buscaNormalizada) return -1;
+        if (codigoB === buscaNormalizada) return 1;
 
         // Ordem alfabética como fallback
         return nomeA.localeCompare(nomeB, 'pt-BR');
