@@ -16,6 +16,8 @@ const PRODUTOS_OCULTOS: (string | number)[] = [
 const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
   'caixa de apoio lombar': [
     'afastador abdominal all path',
+    'pinça kerrinson reta p/cima 23cm 2mm', // Oculto temporariamente - mesma imagem que a de 20cm
+    'pinça love p/cima 20cm ponta 4x10', // Oculto temporariamente - mesma imagem que outras pinças love
   ],
 };
 
