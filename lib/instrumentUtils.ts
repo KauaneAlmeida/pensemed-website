@@ -285,6 +285,102 @@ const AGRUPAMENTOS_POR_TABELA: Record<string, AgrupamentoEspecial[]> = {
       nomeBase: 'Cureta Baioneta',
     },
   ],
+  'caixa de apoio lombar': [
+    {
+      // CURETA BUSHE 26,5 CM ANG FIG 00 -> agrupa todas as Curetas Bushe
+      padrao: /cureta\s+bushe/i,
+      extrairGrupo: () => '26,5cm',
+      extrairVariacao: (nome: string) => {
+        // Extrair tipo de ponta e figura
+        const angMatch = nome.match(/(ang(?:ulada)?|reta|p\/\s*tras)/i);
+        const figMatch = nome.match(/fig\s*(\d+)/i);
+        const mmMatch = nome.match(/(\d+)\s*mm/i);
+
+        let variacao = '';
+        if (angMatch) {
+          const tipo = angMatch[1].toLowerCase();
+          if (tipo.includes('ang')) variacao = 'Angular';
+          else if (tipo.includes('reta')) variacao = 'Reta';
+          else if (tipo.includes('tras')) variacao = 'Reta P/Trás';
+        }
+        if (figMatch) variacao += ` FIG ${figMatch[1]}`;
+        if (mmMatch && !figMatch) variacao += ` ${mmMatch[1]}mm`;
+
+        return variacao.trim() || null;
+      },
+      nomeBase: 'Cureta Bushe 26,5cm',
+    },
+    {
+      // ELEVADOR COBB 25CM 20MM -> agrupa por comprimento
+      padrao: /elevador\s+cobb\s+(?!llif)/i,
+      extrairGrupo: () => '20mm',
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/(\d+)\s*cm/i);
+        return match ? `${match[1]}cm` : null;
+      },
+      nomeBase: 'Elevador Cobb 20mm',
+    },
+    {
+      // FORMÃO SMITH-PETERSON 24CM X 6MM -> agrupa por largura
+      padrao: /form[aã]o\s+smith/i,
+      extrairGrupo: () => '24cm',
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/x?\s*(\d+)\s*mm/i);
+        return match ? `${match[1]}mm` : null;
+      },
+      nomeBase: 'Formão Smith-Peterson 24cm',
+    },
+    {
+      // PINÇA KERRINSON 40° ANGULADA 20CM 3MM -> agrupa pinças 40° anguladas
+      padrao: /pin[cç]a\s+kerr?inson\s+40[°º]?\s*ang/i,
+      extrairGrupo: () => '40° Angulada',
+      extrairVariacao: (nome: string) => {
+        const cmMatch = nome.match(/(\d+)\s*cm/i);
+        const mmMatch = nome.match(/(\d+)\s*mm/i);
+        let variacao = '';
+        if (cmMatch) variacao = `${cmMatch[1]}cm`;
+        if (mmMatch) variacao += ` ${mmMatch[1]}mm`;
+        return variacao.trim() || null;
+      },
+      nomeBase: 'Pinça Kerrison 40° Angulada',
+    },
+    {
+      // PINÇA KERRINSON BICO P/ CIMA 40GRAU 20CM 1,0MM -> agrupa pinças bico p/ cima 40°
+      padrao: /pin[cç]a\s+kerr?inson\s+bico\s+p\/?\s*cima\s+40/i,
+      extrairGrupo: () => 'Bico P/Cima 40°',
+      extrairVariacao: (nome: string) => {
+        const mmMatch = nome.match(/(\d+[,.]?\d*)\s*mm/i);
+        return mmMatch ? `${mmMatch[1].replace(',', '.')}mm` : null;
+      },
+      nomeBase: 'Pinça Kerrison Bico P/Cima 40° 20cm',
+    },
+    {
+      // PINÇA KERRINSON RETA P/ CIMA 20CM 3MM -> agrupa pinças retas p/ cima
+      padrao: /pin[cç]a\s+kerr?inson\s+reta\s+p\/?\s*cima/i,
+      extrairGrupo: (nome: string) => {
+        const cmMatch = nome.match(/(\d+)\s*cm/i);
+        return cmMatch ? `${cmMatch[1]}cm` : 'Reta';
+      },
+      extrairVariacao: (nome: string) => {
+        const mmMatch = nome.match(/(\d+[,.]?\d*)\s*mm/i);
+        return mmMatch ? `${mmMatch[1].replace(',', '.')}mm` : null;
+      },
+      nomeBase: 'Pinça Kerrison Reta P/Cima',
+    },
+    {
+      // CURETA SIMON 22CM PONTA RETA Nº 0 -> agrupa curetas Simon
+      padrao: /cureta\s+simon\s+22\s*cm/i,
+      extrairGrupo: (nome: string) => {
+        const pontaMatch = nome.match(/ponta\s+(reta|angulada)/i);
+        return pontaMatch ? pontaMatch[1].charAt(0).toUpperCase() + pontaMatch[1].slice(1).toLowerCase() : 'Geral';
+      },
+      extrairVariacao: (nome: string) => {
+        const numMatch = nome.match(/n[°º]?\s*(\d+)/i);
+        return numMatch ? `N°${numMatch[1]}` : null;
+      },
+      nomeBase: 'Cureta Simon 22cm',
+    },
+  ],
 };
 
 /**

@@ -61,7 +61,12 @@ export default function InstrumentoDetalhes({
         return;
       }
 
-      const productId = variacaoSelecionada?.id || instrumento.id;
+      // Algumas tabelas não têm coluna id, então usa 0 como placeholder
+      // A busca será feita pelo nome/slug quando disponível
+      let productId = variacaoSelecionada?.id || instrumento.id;
+      if (!productId || (typeof productId === 'number' && isNaN(productId))) {
+        productId = 0;
+      }
       const productName = variacaoSelecionada?.nome || instrumento.nome;
 
       try {

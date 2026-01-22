@@ -26,14 +26,31 @@ const TABELAS_COM_PRODUTO_NOME = [
 const TABELAS_ESTRUTURA_ESPECIAL: Record<string, {
   campoBusca: string;       // Campo para buscar o produto (nome ou produto_slug)
   campoUrl: string;         // Campo que contém a URL da imagem
-  usarNomeExato: boolean;   // Se deve buscar pelo nome exato do produto
+  usarSlug: boolean;        // Se deve converter o nome para slug antes de buscar
 }> = {
   'caixa_de_apoio_lombar_imagens': {
-    campoBusca: 'nome',
+    campoBusca: 'produto_slug',
     campoUrl: 'url_imagem',
-    usarNomeExato: true,
+    usarSlug: true,
   },
 };
+
+/**
+ * Converte nome do produto para slug (formato usado na tabela de imagens)
+ * Ex: "Cureta Bushe 26,5cm Reta" -> "cureta-bushe-265cm-reta"
+ */
+function gerarSlugProduto(nome: string): string {
+  return nome
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[,.:;]/g, '')          // Remove pontuação
+    .replace(/[\/\\]/g, '-')         // Substitui barras por hífen
+    .replace(/[^a-z0-9\s-]/g, '')    // Remove caracteres especiais
+    .replace(/\s+/g, '-')            // Espaços para hífens
+    .replace(/-+/g, '-')             // Remove hífens duplicados
+    .replace(/^-|-$/g, '');          // Remove hífens no início/fim
+}
 
 /**
  * Hook para buscar imagens de um produto do Supabase
@@ -118,47 +135,124 @@ export async function getProductImages(
 
     // Tratamento para tabelas com estrutura especial
     if (estruturaEspecial && productName) {
-      console.log(`[getProductImages] Usando estrutura especial - campo: ${estruturaEspecial.campoBusca}, valor: "${productName}"`);
+      // Se a tabela usa slug, converte o nome do produto para slug
+      const slugCompleto = estruturaEspecial.usarSlug
+        ? gerarSlugProduto(productName)
+        : productName;
 
-      // Primeiro tenta busca exata
-      let { data, error } = await supabase
+      console.log(`[getProductImages] Usando estrutura especial - campo: ${estruturaEspecial.campoBusca}, slug: "${slugCompleto}" (nome original: "${productName}")`);
+
+      // Extrai palavras-chave importantes do slug (ignora números e medidas)
+      const palavrasChave = slugCompleto
+        .split('-')
+        .filter(p => p.length > 2 && !/^\d+$/.test(p) && !['cm', 'mm', 'grau', 'fig'].includes(p));
+
+      let data: any[] | null = null;
+      let error: any = null;
+
+      // Estratégia 1: Busca exata pelo slug completo
+      const resultExato = await supabase
         .from(imageTableName)
         .select('*')
-        .eq(estruturaEspecial.campoBusca, productName)
+        .eq(estruturaEspecial.campoBusca, slugCompleto)
         .order('ordem', { ascending: true });
 
-      // Se não encontrou, tenta busca case-insensitive com ilike
-      if (!error && (!data || data.length === 0)) {
-        console.log(`[getProductImages] Busca exata não encontrou, tentando ilike...`);
-        const result = await supabase
-          .from(imageTableName)
-          .select('*')
-          .ilike(estruturaEspecial.campoBusca, productName)
-          .order('ordem', { ascending: true });
-        data = result.data;
-        error = result.error;
+      if (!resultExato.error && resultExato.data && resultExato.data.length > 0) {
+        data = resultExato.data;
+        console.log(`[getProductImages] Busca exata encontrou ${data.length} imagens`);
       }
 
-      // Se ainda não encontrou, tenta busca parcial (contém o nome)
-      if (!error && (!data || data.length === 0)) {
-        console.log(`[getProductImages] ilike não encontrou, tentando busca parcial...`);
-        // Pega as primeiras palavras significativas do nome para busca
-        const palavrasChave = productName
-          .replace(/[^\w\sÀ-ú]/g, '') // Remove caracteres especiais exceto acentos
-          .split(/\s+/)
-          .filter(p => p.length > 2)
-          .slice(0, 3)
-          .join('%');
+      // Função para calcular similaridade entre strings (definida aqui para uso nas estratégias)
+      const calcularSimilaridade = (s1: string, s2: string): number => {
+        const palavras1 = s1.split('-');
+        const palavras2 = s2.split('-');
+        let matches = 0;
+        for (const p1 of palavras1) {
+          // Match exato ou parcial (para lidar com variações como leksell/leksel)
+          if (palavras2.some(p2 => p1 === p2 || p1.startsWith(p2) || p2.startsWith(p1))) {
+            matches++;
+          }
+        }
+        return matches / Math.max(palavras1.length, palavras2.length);
+      };
 
-        if (palavrasChave) {
-          const result = await supabase
+      // Estratégia 2: Busca com as 2-3 primeiras palavras-chave
+      if (!data || data.length === 0) {
+        const prefixo = palavrasChave.slice(0, 3).join('-');
+        if (prefixo) {
+          console.log(`[getProductImages] Tentando busca por prefixo: "${prefixo}%"`);
+          const resultPrefixo = await supabase
             .from(imageTableName)
             .select('*')
-            .ilike(estruturaEspecial.campoBusca, `%${palavrasChave}%`)
+            .ilike(estruturaEspecial.campoBusca, `${prefixo}%`)
             .order('ordem', { ascending: true });
-          data = result.data;
-          error = result.error;
-          console.log(`[getProductImages] Busca parcial com "${palavrasChave}" encontrou ${data?.length || 0} imagens`);
+
+          if (!resultPrefixo.error && resultPrefixo.data && resultPrefixo.data.length > 0) {
+            // Verifica se há múltiplos slugs diferentes
+            const slugsEncontrados = [...new Set(resultPrefixo.data.map((img: any) => img.produto_slug))];
+
+            if (slugsEncontrados.length === 1) {
+              data = resultPrefixo.data;
+              console.log(`[getProductImages] Busca por prefixo encontrou ${data.length} imagens`);
+            } else {
+              // Múltiplos slugs - escolhe o mais similar (com threshold mínimo de 0.5)
+              let melhorSlug = slugsEncontrados[0];
+              let melhorScore = 0;
+              for (const slug of slugsEncontrados) {
+                const score = calcularSimilaridade(slugCompleto, slug);
+                if (score > melhorScore) {
+                  melhorScore = score;
+                  melhorSlug = slug;
+                }
+              }
+              // Só usa se o score for >= 0.5 (pelo menos 50% de similaridade)
+              if (melhorScore >= 0.5) {
+                data = resultPrefixo.data.filter((img: any) => img.produto_slug === melhorSlug);
+                console.log(`[getProductImages] Busca por prefixo: melhor match "${melhorSlug}" (score: ${melhorScore.toFixed(2)}, ${data.length} imagens)`);
+              } else {
+                console.log(`[getProductImages] Busca por prefixo: score muito baixo (${melhorScore.toFixed(2)}), ignorando`);
+              }
+            }
+          }
+        }
+      }
+
+      // Estratégia 3: Busca com apenas as 2 primeiras palavras-chave (mais genérica)
+      // Usa scoring para encontrar o melhor match quando há múltiplos resultados
+      if (!data || data.length === 0) {
+        const prefixoCurto = palavrasChave.slice(0, 2).join('-');
+        if (prefixoCurto && prefixoCurto !== palavrasChave.slice(0, 3).join('-')) {
+          console.log(`[getProductImages] Tentando busca por prefixo curto: "${prefixoCurto}%"`);
+          const resultPrefixoCurto = await supabase
+            .from(imageTableName)
+            .select('*')
+            .ilike(estruturaEspecial.campoBusca, `${prefixoCurto}%`)
+            .order('ordem', { ascending: true });
+
+          if (!resultPrefixoCurto.error && resultPrefixoCurto.data && resultPrefixoCurto.data.length > 0) {
+            // Agrupa por slug e calcula score de similaridade
+            const slugsEncontrados = [...new Set(resultPrefixoCurto.data.map((img: any) => img.produto_slug))];
+
+            // Encontra o slug com maior similaridade
+            let melhorSlug = slugsEncontrados[0];
+            let melhorScore = 0;
+            for (const slug of slugsEncontrados) {
+              const score = calcularSimilaridade(slugCompleto, slug);
+              console.log(`[getProductImages] Score para "${slug}": ${score.toFixed(2)}`);
+              if (score > melhorScore) {
+                melhorScore = score;
+                melhorSlug = slug;
+              }
+            }
+
+            // Só usa se o score for >= 0.5 (pelo menos 50% de similaridade)
+            if (melhorScore >= 0.5) {
+              data = resultPrefixoCurto.data.filter((img: any) => img.produto_slug === melhorSlug);
+              console.log(`[getProductImages] Busca por prefixo curto: melhor match "${melhorSlug}" (score: ${melhorScore.toFixed(2)}, ${data.length} imagens)`);
+            } else {
+              console.log(`[getProductImages] Busca por prefixo curto: score muito baixo (${melhorScore.toFixed(2)}), ignorando`);
+            }
+          }
         }
       }
 
@@ -173,7 +267,7 @@ export async function getProductImages(
         url: item[estruturaEspecial.campoUrl] || item.url_imagem || item.url,
         ordem: item.ordem || index,
         principal: item.ordem === 1 || index === 0,
-        produto_nome: item.nome || productName,
+        produto_nome: item.produto_slug || productName,
       }));
 
       console.log(`[getProductImages] Encontradas ${imagensNormalizadas.length} imagens (estrutura especial)`);

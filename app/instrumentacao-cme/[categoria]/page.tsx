@@ -185,16 +185,16 @@ function InstrumentoCard({ instrumento, slugCaixa, nomeTabela }: { instrumento: 
   // Buscar imagens da tabela de imagens
   useEffect(() => {
     const fetchImages = async () => {
-      const productId = typeof instrumento.id === 'string' ? parseInt(instrumento.id, 10) : instrumento.id;
-
+      // Tenta converter ID para número, mas não desiste se falhar
+      // Algumas tabelas (como caixa de apoio lombar) não têm coluna id
+      let productId = typeof instrumento.id === 'string' ? parseInt(instrumento.id, 10) : instrumento.id;
       if (isNaN(productId)) {
-        setLoadingImages(false);
-        return;
+        productId = 0; // Usar 0 como placeholder - a busca será feita pelo nome
       }
 
       try {
         // Usa o nome da primeira variação (nome completo) para buscar imagens
-        // pois tabelas como caixa_de_apoio_lombar_imagens usam produto_nome com nome completo
+        // pois tabelas como caixa_de_apoio_lombar_imagens usam produto_slug derivado do nome
         const nomeParaBusca = primeiraVariacao?.nome || instrumento.nome;
         const { data, error } = await getProductImages(productId, nomeTabela, nomeParaBusca);
 
