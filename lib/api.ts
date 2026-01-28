@@ -1733,6 +1733,9 @@ export async function getProdutosRelacionados(
           if (String(itemId) === String(produtoAtualId)) return;
           if (relacionados.length >= limite) return;
 
+          // Verificar se o produto deve ser oculto
+          if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) return;
+
           let imagemUrl = item.imagem_url || item.imagem || null;
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
@@ -1788,6 +1791,9 @@ export async function getProdutosRelacionados(
 
           data.forEach((item: any, index: number) => {
             if (relacionados.length >= limite) return;
+
+            // Verificar se o produto deve ser oculto
+            if (produtoDeveSerOcultoDaTabela(item.nome || '', outraCaixa)) return;
 
             let imagemUrl = item.imagem_url || item.imagem || null;
             if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
