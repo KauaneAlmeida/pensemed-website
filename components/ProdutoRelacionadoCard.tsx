@@ -37,7 +37,8 @@ export default function ProdutoRelacionadoCard({
       }
 
       try {
-        const { data, error } = await getProductImages(productId, caixaTabela);
+        // Passa o nome do produto para permitir busca em tabelas com estrutura especial
+        const { data, error } = await getProductImages(productId, caixaTabela, nome);
 
         if (!error && data && data.length > 0) {
           // Usa a imagem principal ou a primeira
@@ -54,7 +55,7 @@ export default function ProdutoRelacionadoCard({
     };
 
     fetchImage();
-  }, [id, caixaTabela]);
+  }, [id, caixaTabela, nome]);
 
   const baseUrl = tipo === 'equipamentos' ? '/equipamentos-medicos' : '/instrumentacao-cme';
   const hoverColor = tipo === 'equipamentos' ? 'hover:border-[#2a7a8a]/30' : 'hover:border-[#205b67]/30';

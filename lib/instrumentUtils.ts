@@ -9,15 +9,193 @@ const PRODUTOS_OCULTOS: (string | number)[] = [
 ];
 
 /**
+ * Lista de IDs de produtos OPME que devem ser ocultados
+ * Usado para esconder produtos que não têm imagem ou devem ser removidos do catálogo
+ */
+const PRODUTOS_OPME_OCULTOS: number[] = [
+  28, // Agulha/Canula para Biopsia Medula Ossea Tipo Jamshidi
+  33, // Marrow-Pack - Kit Aspiracao Celulas Mesenquimais
+];
+
+/**
  * Produtos ocultos por tabela específica
  * Chave: nome da tabela (lowercase)
  * Valor: array de nomes de produtos a ocultar (lowercase para comparação)
  */
 const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
   'caixa de apoio lombar': [
+    // Sem imagem
     'afastador abdominal all path',
-    'pinça kerrinson reta p/cima 23cm 2mm', // Oculto temporariamente - mesma imagem que a de 20cm
-    'pinça love p/cima 20cm ponta 4x10', // Oculto temporariamente - mesma imagem que outras pinças love
+    'cabo p/ bisturi nº 3 longo redondo',
+    'cinzel stille 20 cm 10 mm',
+    'cureta bushe 26,5 cm ponta reta fig 000',
+    'cureta bushe 26,5 cm ponta reta p/tras 3 mm',
+    'cureta bushe 26,5 cm reta fig 00 -r',
+    'cureta caspar 22 cm ponta quadrada 4 mm',
+    'goiva smith peterson curva 20 cm x 14 mm',
+    'goiva smith peterson curva 20 cm x 9 mm',
+    'impactor de enxerto 1x1cm 20cm',
+    'lâmina p/ afastador cloward lombar 65x23mm',
+    'lâmina p/afastador caspar cloward 25x51mm',
+    'martelo de teflon 23cm',
+    'pinça goiva luer-stiller biarticulada curva 24cm',
+    'pinça kerrinson 40° angulada 20cm 3mm',
+    'pinça kerrinson 40° angulada 23cm 5mm',
+    'pinça lova p/biaxo 20cm ponta 3x10',
+    'pinça oldberg 18cm boca 6,0mm',
+    'ponta aspirador cushing 4,0mm',
+    'ponta aspirador frazier 2,0mm',
+    'ponta aspirador frazier 3,0mm',
+    'pinça goivabeyer articulada curva 18cm4,0mm',
+    // Ocultos por outros motivos
+    'pinça kerrinson reta p/cima 23cm 2mm',
+    'pinça love p/cima 20cm ponta 4x10',
+  ],
+  'caixa de apoio alif': [
+    // Sem imagem
+    'afastador langenbeck 210mm 25 x 110mm',
+    'afastador langenbeck 210mm 25 x 130mm',
+    'afastador langenbeck 210mm 25 x 180mm',
+    'descolador baioneta p/ cima 32cm x 4mm',
+    // Ocultos por outros motivos
+    'cabo dilatadores llif',
+    'cinzel smith petersen',
+    'dilatador llif',
+    'raspador de enxerto llif',
+    'supra púbico 135°',
+  ],
+  'caixa baioneta mis': [
+    // Sem imagem - Afastadores MIS
+    'ass186 - afastador mis starlet system 18mm x 60mm',
+    'ass187 - afastador mis starlet system 18mm x 70mm',
+    'ass188 - afastador mis starlet system 18mm x 80mm',
+    'ass189 - afastador mis starlet system 18mm x 90mm',
+    'ass190 - afastador mis starlet system 18mm x 100mm',
+    'ass225 - afastador mis starlet system 22mm x 50mm',
+    'ass226 - afastador mis starlet system 22mm x 60mm',
+    'ass227 - afastador mis starlet system 22mm x 70mm',
+    'ass228 - afastador mis starlet system 22mm x 80mm',
+    'ass229 - afastador mis starlet system 22mm x 90mm',
+    'ass230 - afastador mis starlet system 22mm x 100mm',
+    'ass265 - afastador mis starlet system 26mm x 50mm',
+    'ass266 - afastador mis starlet system 26mm x 60mm',
+    'ass267 - afastador mis starlet system 26mm x 70mm',
+    'ass268 - afastador mis starlet system 26mm x 80mm',
+    'ass269 - afastador mis starlet system 26mm x 90mm',
+    'ass270 - afastador mis starlet system 26mm x 100mm',
+    // Sem imagem - Fixação
+    'ass281 - base fixação em mesa cirúrgica',
+    'ass282 - haste primária p/ fixação em mesa',
+    'ass283 - haste secundária p/ fixação em mesa',
+    'ass284 - conexão primária p/ fixação',
+    'ass285 - conexão secundária p/ fixação',
+    'ass286 - braço flexível p/ fixação',
+    'ass287 - braço articulado p/ fixação',
+    // Sem imagem - Curetas
+    'ass300 - cureta baioneta reta mis starlet system n°0000',
+    'ass301 - cureta baioneta reta mis starlet system n°000',
+    'ass302 - cureta baioneta reta mis starlet system n°00',
+    'ass303 - cureta baioneta reta mis starlet system n°0',
+    'ass306 - cureta baioneta angulada mis starlet system n°0000',
+    'ass307 - cureta baioneta angulada mis starlet system n°000',
+    'ass308 - cureta baioneta angulada mis starlet system n°00',
+    'ass309 - cureta baioneta angulada mis starlet system n°0',
+  ],
+  'caixa cervical translucente': [
+    // Sem imagem - todos exceto 2
+    'afastador transversal direito',
+    'afastador transversal esquerdo',
+    'afastador vertebral direito',
+    'afastador vertebral esquerdo',
+    'afastador vertebral duplo acionamento',
+    'medidor de profundidade',
+    'cabo langembeck para lâminas translucent',
+    'impactador translucent',
+    'guia drill translucent',
+    'drill manual translucent',
+    'drill automático translucent',
+    'chave aplicadora para parafuso translucent',
+    'parafuso 12mm translucent',
+    'parafuso 14mm translucent',
+    'parafuso 16mm translucent',
+    'cureta translucent reta nº0000',
+    'cureta translucent reta nº000',
+    'cureta translucent reta nº00',
+    'cureta translucent angulada nº0000',
+    'cureta translucent angulada nº000',
+    'cureta translucent angulada nº00',
+    'lâmina lisa 35x23mm',
+    'lâmina lisa 40x23mm',
+    'lâmina lisa 45x23mm',
+    'lâmina lisa 50x23mm',
+    'lâmina lisa 55x23mm',
+    'lâmina lisa 60x23mm',
+    'lâmina lisa 65x23mm',
+    'lâmina lisa 35x16mm',
+    'lâmina lisa 40x16mm',
+    'lâmina lisa 45x16mm',
+    'lâmina lisa 50x16mm',
+    'lâmina lisa 55x16mm',
+    'lâmina lisa 60x16mm',
+    'lâmina lisa 65x16mm',
+    'lâmina c/ dente peq 35x23mm',
+    'lâmina c/ dente peq 40x23mm',
+    'lâmina c/ dente peq 45x23mm',
+    'lâmina c/ dente peq 50x23mm',
+    'lâmina c/ dente peq 55x23mm',
+    'lâmina c/ dente peq 60x23mm',
+    'lâmina c/ dente peq 65x23mm',
+    'lâmina c/ dente peq 35x16mm',
+    'lâmina c/ dente peq 40x16mm',
+    'lâmina c/ dente peq 45x16mm',
+    'lâmina c/ dente peq 50x16mm',
+    'lâmina c/ dente peq 55x16mm',
+    'lâmina c/ dente peq 60x16mm',
+    'lâmina c/ dente peq 65x16mm',
+    'lâmina c/ dente longo 35x23mm',
+    'lâmina c/ dente longo 40x23mm',
+    'lâmina c/ dente longo 45x23mm',
+    'lâmina c/ dente longo 50x23mm',
+    'lâmina c/ dente longo 55x23mm',
+    'lâmina c/ dente longo 60x23mm',
+    'lâmina c/ dente longo 65x23mm',
+  ],
+  'caixa endoscopia coluna': [
+    // Sem imagem - quase todos
+    'pinça de preensão fina',
+    'pinça de preensão longa',
+    'pinça de dissecção longa',
+    'pinça de dissecção fina',
+    'pinça kerrison 1mm (90°)',
+    'pinça kerrison 2mm (90°)',
+    'pinça kerrison 3mm (90°)',
+    'pinça kerrison 1mm (130°)',
+    'pinça kerrison 2mm (130°)',
+    'pinça kerrison 3mm (130°)',
+    'tesoura endoscópica reta',
+    'tesoura endoscópica curva',
+    'probe esférico',
+    'probe curvo',
+    'dissector curvo',
+    'dissector fino',
+    'cureta reta',
+    'cureta curva',
+    'cureta angulada',
+    'cânula de acesso 2.8 mm',
+    'cânula de acesso 4.0 mm',
+    'cânula de trabalho',
+    'dilatador cônico 2.8 mm',
+    'dilatador cônico 4.0 mm',
+    'endoscópio para endoscopia transforaminal',
+    'endoscópio para endoscopia interlaminar',
+    'endoscópio para estenose',
+    'endoscópio para ube',
+    'conjunto de instrumentos ube',
+  ],
+  'caixa apoio bucomaxilo': [
+    // Sem imagem
+    'pinça walshan reta 23cm',
+    'pinça dissecção reta adson lisa 12cm',
   ],
 };
 
@@ -69,6 +247,13 @@ export function produtoDeveSerOcultoDaTabela(nomeProduto: string, nomeTabela: st
   if (!produtosOcultos) return false;
 
   return produtosOcultos.some(p => produtoLower.includes(p) || p.includes(produtoLower));
+}
+
+/**
+ * Verifica se um produto OPME deve ser ocultado (por ID)
+ */
+export function produtoOPMEDeveSerOculto(id: number): boolean {
+  return PRODUTOS_OPME_OCULTOS.includes(id);
 }
 
 export interface InstrumentoBase {

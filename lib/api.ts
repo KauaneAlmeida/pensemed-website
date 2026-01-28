@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginados, CaixaCME, tabelaToNomeExibicao, tabelaToSlug, CategoriaEquipamento, EquipamentoMedico, EquipamentosMedicosPaginados, ProdutoOPME, ProdutosOPMEPaginados } from './types';
 import { unstable_cache } from 'next/cache';
 import { devLog, logError, CACHE_CONFIG } from './cache';
-import { produtoDeveSerOcultoDaTabela } from './instrumentUtils';
+import { produtoDeveSerOcultoDaTabela, produtoOPMEDeveSerOculto } from './instrumentUtils';
 
 // Flag para habilitar/desabilitar logs detalhados
 const ENABLE_DETAILED_LOGS = process.env.NODE_ENV === 'development';
@@ -241,16 +241,16 @@ export async function getProdutosByCategoriaSlug(slugCategoria: string): Promise
  * IMPORTANTE: Use o nome EXATO da tabela como está no Supabase (com espaços)
  */
 const TABELAS_CME = [
-  'caixa cervical translucente',
+  // 'caixa cervical translucente', // Oculto temporariamente
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
-  'caixa endoscopia coluna',
-  'caixa baioneta mis',
+  // 'caixa endoscopia coluna', // Oculto temporariamente
+  // 'caixa baioneta mis', // Oculto temporariamente
   'caixa intrumentacao cirurgica cranio',
   'caixa micro tesouras',
   'caixa microdissectores rhoton',
-  'kit afastadores tubulares endoscopia',
+  // 'kit afastadores tubulares endoscopia', // Oculto temporariamente
   'afastador abdominal all path – omni tract',
   'caixa apoio bucomaxilo',
   'instrumental peça de mão stryker formula',
@@ -1258,6 +1258,7 @@ export async function getTodosProdutosCatalogo(
         const usaNomeCME = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagens || '') ||
                           TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagens || ''];
 
+        let produtosAdicionados = 0;
         data.forEach((item: any, index: number) => {
           // Verificar se o produto deve ser ocultado desta tabela específica
           if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) {
@@ -1303,15 +1304,16 @@ export async function getTodosProdutosCatalogo(
             caixa_slug: caixaSlugAtual,
             temImagemNaTabela,
           });
+          produtosAdicionados++;
         });
 
-        // Atualizar contagem
+        // Atualizar contagem (apenas produtos não-ocultos)
         const totalCaixa = contagemCaixas.get(caixaSlugAtual)?.total || 0;
         contagemCaixas.set(caixaSlugAtual, {
           nome: caixaNome,
           slug: caixaSlugAtual,
           categoria: 'Instrumentação Cirúrgica CME',
-          total: totalCaixa + data.length,
+          total: totalCaixa + produtosAdicionados,
         });
       } catch (err) {
         console.error(`[getTodosProdutosCatalogo] Erro em tabela CME "${nomeTabela}":`, err);
@@ -1398,7 +1400,14 @@ export async function getTodosProdutosCatalogo(
         const usaNomeEquip = TABELAS_COM_PRODUTO_NOME.includes(tabelaImagensEquip || '') ||
                             TABELAS_ESTRUTURA_ESPECIAL_API[tabelaImagensEquip || ''];
 
+        let equipAdicionados = 0;
         data.forEach((item: any, index: number) => {
+          // Verificar se o equipamento deve ser ocultado desta tabela específica
+          if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) {
+            console.log(`[getTodosProdutosCatalogo] Equipamento oculto: "${item.nome}" da tabela "${nomeTabela}"`);
+            return; // Pular este equipamento
+          }
+
           let imagemUrl = item.imagem_url || item.imagem || null;
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
@@ -1428,15 +1437,16 @@ export async function getTodosProdutosCatalogo(
             caixa_slug: caixaSlugAtual,
             temImagemNaTabela,
           });
+          equipAdicionados++;
         });
 
-        // Atualizar contagem
+        // Atualizar contagem (apenas equipamentos não-ocultos)
         const totalCaixa = contagemCaixas.get(caixaSlugAtual)?.total || 0;
         contagemCaixas.set(caixaSlugAtual, {
           nome: caixaNome,
           slug: caixaSlugAtual,
           categoria: 'Equipamentos Médicos',
-          total: totalCaixa + data.length,
+          total: totalCaixa + equipAdicionados,
         });
       } catch (err) {
         console.error(`[getTodosProdutosCatalogo] Erro em tabela Equip "${nomeTabela}":`, err);
@@ -1469,9 +1479,11 @@ export async function getTodosProdutosCatalogo(
       if (error) {
         console.warn(`[getTodosProdutosCatalogo] Tabela OPME erro:`, error.message);
       } else if (data && data.length > 0) {
-        console.log(`[getTodosProdutosCatalogo] Tabela OPME: ${data.length} itens`);
+        // Filtrar produtos OPME ocultos
+        const dataFiltrada = data.filter((item: any) => !produtoOPMEDeveSerOculto(item.id));
+        console.log(`[getTodosProdutosCatalogo] Tabela OPME: ${dataFiltrada.length} itens (${data.length - dataFiltrada.length} ocultos)`);
 
-        data.forEach((item: any, index: number) => {
+        dataFiltrada.forEach((item: any, index: number) => {
           const produtoIdOPME = item.id || index;
           const temImagemNaTabela = opmeComImagem.has(produtoIdOPME);
 
@@ -1490,12 +1502,12 @@ export async function getTodosProdutosCatalogo(
           todosProdutos.push(produtoCatalogo);
         });
 
-        // Contagem de categoria OPME
+        // Contagem de categoria OPME (apenas produtos não ocultos)
         const countOPME = contagemCategorias.get('OPME') || 0;
-        contagemCategorias.set('OPME', countOPME + data.length);
+        contagemCategorias.set('OPME', countOPME + dataFiltrada.length);
 
-        // Contagem de caixas/categorias OPME
-        data.forEach((item: any) => {
+        // Contagem de caixas/categorias OPME (apenas produtos não ocultos)
+        dataFiltrada.forEach((item: any) => {
           const categoriaOPME = item.categoria || 'OPME';
           const slugCategoria = tabelaToSlug(categoriaOPME);
           const caixaExistente = contagemCaixas.get(slugCategoria);
@@ -1846,6 +1858,10 @@ const PADRAO_NUMERO = /\s*(Nº?\s*\d+|N[°º]?\s*\d+|#\d+)$/i;
 // Padrão para medidas compostas: 35x23mm, 45x23mm, 25 X 110MM, etc
 const PADRAO_MEDIDA_COMPOSTA = /\s*(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m)?$/i;
 
+// Padrão para "PONTA NxM" (ex: PONTA 2X10MMR, PONTA 3X10R, PONTA 4X10)
+// Captura: PONTA + número + X + número + sufixo opcional (MMR, R, MM, etc)
+const PADRAO_PONTA = /\s*PONTA\s+(\d+)\s*[xX×]\s*(\d+)\s*(mmr?|r)?$/i;
+
 // Padrão para medidas simples no final: 18CM, 110MM, x24CM, X 3MM, 10,0MM
 const PADRAO_MEDIDA_SIMPLES = /\s*[xX×]?\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m|"|'|pol|polegadas?)$/i;
 
@@ -1870,7 +1886,19 @@ function extrairVariacaoDoNome(nome: string): { nomeBase: string; variacao: stri
     };
   }
 
-  // 2. Tenta detectar medidas compostas (35x23mm, 25 X 110MM, etc)
+  // 2. Tenta detectar padrão "PONTA NxM" (ex: PONTA 2X10MMR, PONTA 3X10R, PONTA 4X10)
+  const matchPonta = nome.match(PADRAO_PONTA);
+  if (matchPonta) {
+    const dim1 = matchPonta[1];
+    const dim2 = matchPonta[2];
+    return {
+      nomeBase: nome.replace(PADRAO_PONTA, '').trim(),
+      variacao: `PONTA ${dim1}x${dim2}`,
+      tipo: 'medida'
+    };
+  }
+
+  // 3. Tenta detectar medidas compostas (35x23mm, 25 X 110MM, etc)
   const matchComposta = nome.match(PADRAO_MEDIDA_COMPOSTA);
   if (matchComposta) {
     const dim1 = matchComposta[1];
@@ -1883,7 +1911,7 @@ function extrairVariacaoDoNome(nome: string): { nomeBase: string; variacao: stri
     };
   }
 
-  // 3. Tenta detectar medidas simples (18CM, x24CM, X 5MM, 10,0MM)
+  // 4. Tenta detectar medidas simples (18CM, x24CM, X 5MM, 10,0MM)
   const matchSimples = nome.match(PADRAO_MEDIDA_SIMPLES);
   if (matchSimples) {
     const valor = matchSimples[1].replace(',', '.');
@@ -2164,6 +2192,12 @@ export async function getVariacoesInstrumento(
 
     for (let idx = 0; idx < todosInstrumentos.length; idx++) {
       const item = todosInstrumentos[idx];
+
+      // Pular produtos que devem ser ocultos
+      if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) {
+        continue;
+      }
+
       const { nomeBase: itemBase, variacao, tipo } = extrairVariacaoDoNome(item.nome);
       const itemBaseNormalizado = itemBase.toLowerCase().trim();
 
@@ -2653,13 +2687,18 @@ export async function getProdutosOPME(options: {
       return { produtos: [], total: 0, pagina, porPagina, totalPaginas: 0 };
     }
 
-    const total = count || 0;
+    // Filtrar produtos ocultos
+    const produtosFiltrados = (data || []).filter((p: ProdutoOPME) => !produtoOPMEDeveSerOculto(p.id));
+
+    // Ajustar contagem total (subtrair produtos ocultos)
+    const produtosOcultosCount = (data || []).length - produtosFiltrados.length;
+    const total = Math.max(0, (count || 0) - produtosOcultosCount);
     const totalPaginas = Math.ceil(total / porPagina);
 
-    console.log(`[getProdutosOPME] Encontrados ${data?.length || 0} produtos de ${total} total`);
+    console.log(`[getProdutosOPME] Encontrados ${produtosFiltrados.length} produtos de ${total} total (${produtosOcultosCount} ocultos)`);
 
     return {
-      produtos: data || [],
+      produtos: produtosFiltrados,
       total,
       pagina,
       porPagina,

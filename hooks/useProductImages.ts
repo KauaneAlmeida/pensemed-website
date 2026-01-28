@@ -15,9 +15,29 @@ export interface ProductImage {
  * Tabelas que usam produto_nome em vez de produto_id
  */
 const TABELAS_COM_PRODUTO_NOME = [
-  'caixa_de_apoio_alif_imagens',
   'caixa_de_apoio_cervical_imagens',
 ];
+
+/**
+ * Tabelas que usam produto_nome com busca por similaridade
+ * (nomes na tabela de imagens são genéricos, sem medidas específicas)
+ */
+const TABELAS_COM_BUSCA_SIMILARIDADE = [
+  'caixa_de_apoio_alif_imagens',
+];
+
+/**
+ * Slugs a serem ignorados por tabela (imagens com URLs inválidas no storage)
+ * Esses slugs não serão exibidos mesmo que existam no banco
+ */
+const SLUGS_IGNORAR: Record<string, string[]> = {
+  'caixa_de_apoio_lombar_imagens': [
+    'cureta-caspar-ponta-quadrada',
+    'lamina-afastador-caspar',
+    'ponta-aspirador-cushing',
+    'ponta-aspirador-frazier',
+  ],
+};
 
 /**
  * Tabelas com estrutura especial (nome, url_imagem, produto_slug)
@@ -122,8 +142,14 @@ export async function getProductImages(
   productName?: string
 ): Promise<{ data: ProductImage[] | null; error: string | null }> {
   try {
+    // Verifica se deve redirecionar para outro produto (variações que compartilham imagens)
+    const productIdParaBusca = REDIRECIONAR_IMAGEM_PRODUTO[productId] || productId;
+    if (productIdParaBusca !== productId) {
+      console.log(`[getProductImages] Redirecionando produto ${productId} para usar imagens do produto ${productIdParaBusca}`);
+    }
+
     // Passa productId para permitir mapeamento especial de produtos com tabela de imagens própria
-    const imageTableName = getImageTableName(tableName, productId);
+    const imageTableName = getImageTableName(tableName, productIdParaBusca);
 
     // Verifica se a tabela tem estrutura especial
     const estruturaEspecial = TABELAS_ESTRUTURA_ESPECIAL[imageTableName];
@@ -131,7 +157,10 @@ export async function getProductImages(
     // Verifica se a tabela usa produto_nome em vez de produto_id
     const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(imageTableName);
 
-    console.log(`[getProductImages] Buscando imagens para produto ${productId} em "${imageTableName}" (estruturaEspecial: ${!!estruturaEspecial}, usaProdutoNome: ${usaProdutoNome})`);
+    // Verifica se a tabela usa busca por similaridade
+    const usaBuscaSimilaridade = TABELAS_COM_BUSCA_SIMILARIDADE.includes(imageTableName);
+
+    console.log(`[getProductImages] Buscando imagens para produto ${productId} em "${imageTableName}" (estruturaEspecial: ${!!estruturaEspecial}, usaProdutoNome: ${usaProdutoNome}, usaBuscaSimilaridade: ${usaBuscaSimilaridade})`);
 
     // Tratamento para tabelas com estrutura especial
     if (estruturaEspecial && productName) {
@@ -188,13 +217,17 @@ export async function getProductImages(
             .order('ordem', { ascending: true });
 
           if (!resultPrefixo.error && resultPrefixo.data && resultPrefixo.data.length > 0) {
+            // Filtra slugs ignorados
+            const slugsIgnorar = SLUGS_IGNORAR[imageTableName] || [];
+            const dadosFiltrados = resultPrefixo.data.filter((img: any) => !slugsIgnorar.includes(img.produto_slug));
+
             // Verifica se há múltiplos slugs diferentes
-            const slugsEncontrados = [...new Set(resultPrefixo.data.map((img: any) => img.produto_slug))];
+            const slugsEncontrados = [...new Set(dadosFiltrados.map((img: any) => img.produto_slug))];
 
             if (slugsEncontrados.length === 1) {
-              data = resultPrefixo.data;
+              data = dadosFiltrados;
               console.log(`[getProductImages] Busca por prefixo encontrou ${data.length} imagens`);
-            } else {
+            } else if (slugsEncontrados.length > 1) {
               // Múltiplos slugs - escolhe o mais similar (com threshold mínimo de 0.5)
               let melhorSlug = slugsEncontrados[0];
               let melhorScore = 0;
@@ -207,7 +240,7 @@ export async function getProductImages(
               }
               // Só usa se o score for >= 0.5 (pelo menos 50% de similaridade)
               if (melhorScore >= 0.5) {
-                data = resultPrefixo.data.filter((img: any) => img.produto_slug === melhorSlug);
+                data = dadosFiltrados.filter((img: any) => img.produto_slug === melhorSlug);
                 console.log(`[getProductImages] Busca por prefixo: melhor match "${melhorSlug}" (score: ${melhorScore.toFixed(2)}, ${data.length} imagens)`);
               } else {
                 console.log(`[getProductImages] Busca por prefixo: score muito baixo (${melhorScore.toFixed(2)}), ignorando`);
@@ -230,8 +263,12 @@ export async function getProductImages(
             .order('ordem', { ascending: true });
 
           if (!resultPrefixoCurto.error && resultPrefixoCurto.data && resultPrefixoCurto.data.length > 0) {
+            // Filtra slugs ignorados
+            const slugsIgnorarCurto = SLUGS_IGNORAR[imageTableName] || [];
+            const dadosFiltradosCurto = resultPrefixoCurto.data.filter((img: any) => !slugsIgnorarCurto.includes(img.produto_slug));
+
             // Agrupa por slug e calcula score de similaridade
-            const slugsEncontrados = [...new Set(resultPrefixoCurto.data.map((img: any) => img.produto_slug))];
+            const slugsEncontrados = [...new Set(dadosFiltradosCurto.map((img: any) => img.produto_slug))];
 
             // Encontra o slug com maior similaridade
             let melhorSlug = slugsEncontrados[0];
@@ -247,7 +284,7 @@ export async function getProductImages(
 
             // Só usa se o score for >= 0.5 (pelo menos 50% de similaridade)
             if (melhorScore >= 0.5) {
-              data = resultPrefixoCurto.data.filter((img: any) => img.produto_slug === melhorSlug);
+              data = dadosFiltradosCurto.filter((img: any) => img.produto_slug === melhorSlug);
               console.log(`[getProductImages] Busca por prefixo curto: melhor match "${melhorSlug}" (score: ${melhorScore.toFixed(2)}, ${data.length} imagens)`);
             } else {
               console.log(`[getProductImages] Busca por prefixo curto: score muito baixo (${melhorScore.toFixed(2)}), ignorando`);
@@ -261,8 +298,19 @@ export async function getProductImages(
         return { data: null, error: error.message };
       }
 
+      // Filtra slugs que devem ser ignorados (imagens com URLs inválidas)
+      const slugsIgnorar = SLUGS_IGNORAR[imageTableName] || [];
+      const dadosFiltrados = (data || []).filter((item: any) => {
+        const slug = item.produto_slug || '';
+        if (slugsIgnorar.includes(slug)) {
+          console.log(`[getProductImages] Ignorando slug com URL inválida: "${slug}"`);
+          return false;
+        }
+        return true;
+      });
+
       // Normaliza os dados para o formato padrão ProductImage
-      const imagensNormalizadas: ProductImage[] = (data || []).map((item: any, index: number) => ({
+      const imagensNormalizadas: ProductImage[] = dadosFiltrados.map((item: any, index: number) => ({
         id: item.id || `${index}`,
         url: item[estruturaEspecial.campoUrl] || item.url_imagem || item.url,
         ordem: item.ordem || index,
@@ -274,13 +322,127 @@ export async function getProductImages(
       return { data: imagensNormalizadas, error: null };
     }
 
+    // Tratamento para tabelas com busca por similaridade (nomes genéricos sem medidas)
+    if (usaBuscaSimilaridade && productName) {
+      console.log(`[getProductImages] Usando busca por similaridade para "${productName}"`);
+
+      // Normaliza o nome do produto para comparação
+      const normalizarNome = (nome: string): string => {
+        return nome
+          .toUpperCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+          .replace(/[°º]/g, '')            // Remove símbolos de grau
+          .trim();
+      };
+
+      // Extrai palavras-chave do nome (remove números e medidas)
+      const extrairPalavrasChave = (nome: string): string[] => {
+        return normalizarNome(nome)
+          .split(/\s+/)
+          .filter(p => p.length > 1 && !/^\d+[,.]?\d*$/.test(p) && !['MM', 'CM', 'X', 'N', 'N°', 'GR', 'GRAU'].includes(p));
+      };
+
+      const palavrasProduto = extrairPalavrasChave(productName);
+      console.log(`[getProductImages] Palavras-chave do produto:`, palavrasProduto);
+
+      // Busca todas as imagens da tabela
+      const { data: todasImagens, error: erroImagens } = await supabase
+        .from(imageTableName)
+        .select('*')
+        .order('ordem', { ascending: true });
+
+      if (erroImagens) {
+        console.error(`[getProductImages] Erro ao buscar imagens:`, erroImagens.message);
+        return { data: null, error: erroImagens.message };
+      }
+
+      // Agrupa imagens por produto_nome
+      const imagensPorProduto = new Map<string, any[]>();
+      for (const img of todasImagens || []) {
+        const nome = img.produto_nome;
+        if (!imagensPorProduto.has(nome)) {
+          imagensPorProduto.set(nome, []);
+        }
+        imagensPorProduto.get(nome)!.push(img);
+      }
+
+      // Calcula score de similaridade para cada produto na tabela de imagens
+      let melhorMatch: { nome: string; score: number; imagens: any[] } | null = null;
+
+      for (const [nomeImagem, imagens] of imagensPorProduto) {
+        const palavrasImagem = extrairPalavrasChave(nomeImagem);
+
+        // Conta quantas palavras-chave do produto estão presentes no nome da imagem
+        let matchesProduto = 0;
+        for (const palavraProduto of palavrasProduto) {
+          // Match exato ou parcial (para lidar com variações de escrita)
+          const temMatch = palavrasImagem.some(pi =>
+            pi === palavraProduto ||
+            pi.startsWith(palavraProduto) ||
+            palavraProduto.startsWith(pi) ||
+            // Lida com erros de escrita comuns (ex: LANGENBECK vs LANGEBECK)
+            (pi.length > 4 && palavraProduto.length > 4 &&
+             (pi.substring(0, 5) === palavraProduto.substring(0, 5)))
+          );
+          if (temMatch) matchesProduto++;
+        }
+
+        // Também conta quantas palavras-chave da imagem estão no produto
+        let matchesImagem = 0;
+        for (const palavraImagem of palavrasImagem) {
+          const temMatch = palavrasProduto.some(pp =>
+            pp === palavraImagem ||
+            pp.startsWith(palavraImagem) ||
+            palavraImagem.startsWith(pp) ||
+            (pp.length > 4 && palavraImagem.length > 4 &&
+             (pp.substring(0, 5) === palavraImagem.substring(0, 5)))
+          );
+          if (temMatch) matchesImagem++;
+        }
+
+        // Score combinado: média dos dois scores
+        const scoreProduto = matchesProduto / palavrasProduto.length;
+        const scoreImagem = palavrasImagem.length > 0 ? matchesImagem / palavrasImagem.length : 0;
+        const score = (scoreProduto + scoreImagem) / 2;
+
+        // Exige que pelo menos a primeira palavra-chave principal faça match
+        const primeirasPalavrasFazMatch = palavrasProduto.length > 0 && palavrasImagem.length > 0 &&
+          (palavrasProduto[0] === palavrasImagem[0] ||
+           palavrasProduto[0].startsWith(palavrasImagem[0]) ||
+           palavrasImagem[0].startsWith(palavrasProduto[0]));
+
+        // Exige que a segunda palavra também faça match (se existir)
+        const segundasPalavrasFazMatch = palavrasProduto.length < 2 || palavrasImagem.length < 2 ||
+          palavrasProduto.slice(0, 2).some(pp =>
+            palavrasImagem.slice(0, 2).some(pi =>
+              pp === pi || pp.startsWith(pi) || pi.startsWith(pp)
+            )
+          );
+
+        // Só considera se pelo menos 40% de match combinado E primeiras palavras fazem match
+        if (score >= 0.4 && primeirasPalavrasFazMatch && segundasPalavrasFazMatch && (!melhorMatch || score > melhorMatch.score)) {
+          melhorMatch = { nome: nomeImagem, score, imagens };
+          console.log(`[getProductImages] Match encontrado: "${nomeImagem}" (score: ${score.toFixed(2)})`);
+        }
+      }
+
+      if (melhorMatch) {
+        console.log(`[getProductImages] Melhor match: "${melhorMatch.nome}" com ${melhorMatch.imagens.length} imagens`);
+        return { data: melhorMatch.imagens, error: null };
+      }
+
+      console.log(`[getProductImages] Nenhum match encontrado para "${productName}"`);
+      return { data: [], error: null };
+    }
+
     // Busca padrão
     let query = supabase.from(imageTableName).select('*');
 
     if (usaProdutoNome && productName) {
       query = query.eq('produto_nome', productName);
     } else {
-      query = query.eq('produto_id', productId);
+      query = query.eq('produto_id', productIdParaBusca);
     }
 
     const { data, error } = await query.order('ordem', { ascending: true });
@@ -290,12 +452,37 @@ export async function getProductImages(
       return { data: null, error: error.message };
     }
 
-    console.log(`[getProductImages] Encontradas ${data?.length || 0} imagens`);
-    return { data, error: null };
+    // Remover duplicatas por URL (manter apenas a primeira ocorrência)
+    const urlsVistas = new Set<string>();
+    const dadosSemDuplicatas = (data || []).filter((img: any) => {
+      const url = img.url;
+      if (urlsVistas.has(url)) {
+        return false;
+      }
+      urlsVistas.add(url);
+      return true;
+    });
+
+    console.log(`[getProductImages] Encontradas ${dadosSemDuplicatas.length} imagens (${(data?.length || 0) - dadosSemDuplicatas.length} duplicatas removidas)`);
+    return { data: dadosSemDuplicatas, error: null };
   } catch (err) {
     return { data: null, error: 'Erro ao buscar imagens' };
   }
 }
+
+/**
+ * Mapeamento de produto_id para usar imagens de outro produto_id
+ * Usado quando produtos similares (variações de tamanho) compartilham as mesmas imagens
+ * Chave: produto_id que não tem imagem -> produto_id que tem as imagens
+ */
+const REDIRECIONAR_IMAGEM_PRODUTO: Record<number, number> = {
+  // Brocas Ósseas TOM SHIELD (5mm-9mm) usam imagens da Broca 4mm (15002)
+  15003: 15002, // 5mm -> 4mm
+  15004: 15002, // 6mm -> 4mm
+  15005: 15002, // 7mm -> 4mm
+  15006: 15002, // 8mm -> 4mm
+  15007: 15002, // 9mm -> 4mm
+};
 
 /**
  * Mapeamento especial para produtos que têm tabelas de imagens próprias
