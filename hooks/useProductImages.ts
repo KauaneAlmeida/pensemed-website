@@ -612,8 +612,19 @@ export async function getOPMEProductImages(
       return { data: null, error: error.message };
     }
 
-    console.log(`[getOPMEProductImages] Encontradas ${data?.length || 0} imagens`);
-    return { data, error: null };
+    // Remover duplicatas por URL (manter apenas a primeira ocorrência)
+    const urlsVistas = new Set<string>();
+    const dadosSemDuplicatas = (data || []).filter((img: OPMEImage) => {
+      const url = img.url;
+      if (urlsVistas.has(url)) {
+        return false;
+      }
+      urlsVistas.add(url);
+      return true;
+    });
+
+    console.log(`[getOPMEProductImages] Encontradas ${dadosSemDuplicatas.length} imagens (${(data?.length || 0) - dadosSemDuplicatas.length} duplicatas removidas)`);
+    return { data: dadosSemDuplicatas, error: null };
   } catch (err) {
     console.error('[getOPMEProductImages] Erro inesperado:', err);
     return { data: null, error: 'Erro ao buscar imagens OPME' };
