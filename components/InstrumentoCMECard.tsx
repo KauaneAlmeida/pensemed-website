@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { InstrumentoCME, codigoValido } from '@/lib/types';
@@ -8,12 +11,13 @@ interface InstrumentoCMECardProps {
 }
 
 export default function InstrumentoCMECard({ instrumento, slugCaixa }: InstrumentoCMECardProps) {
+  const [imageError, setImageError] = useState(false);
 
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 overflow-hidden group">
       {/* Imagem do Instrumento - mais compacta */}
       <div className="relative h-40 bg-gray-50 overflow-hidden">
-        {instrumento.imagem_url ? (
+        {instrumento.imagem_url && !imageError ? (
           <Image
             src={instrumento.imagem_url}
             alt={`${instrumento.categoria} - ${instrumento.codigo}`}
@@ -21,6 +25,7 @@ export default function InstrumentoCMECard({ instrumento, slugCaixa }: Instrumen
             className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             loading="lazy"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#205b67]/10 to-gray-100">

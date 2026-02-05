@@ -3,6 +3,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
+function ImageFallback({ className = '' }: { className?: string }) {
+  return (
+    <div className={`flex items-center justify-center h-full w-full bg-gray-50 ${className}`}>
+      <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+  );
+}
+
 export interface GalleryImage {
   id?: string;
   url: string;
@@ -36,6 +46,7 @@ export default function ImageGallery({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
 
   // Encontra o indice da imagem principal
   useEffect(() => {
@@ -135,13 +146,18 @@ export default function ImageGallery({
     >
       {/* Imagem ocupando o maximo do espaco com fundo branco */}
       <div className="relative w-full h-full overflow-hidden">
-        <Image
-          src={currentImage.url}
-          alt={`${productName}${hasMultipleImages ? ` - ${currentIndex + 1}/${images.length}` : ''}`}
-          fill
-          className="object-contain p-1"
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-        />
+        {failedUrls.has(currentImage.url) ? (
+          <ImageFallback />
+        ) : (
+          <Image
+            src={currentImage.url}
+            alt={`${productName}${hasMultipleImages ? ` - ${currentIndex + 1}/${images.length}` : ''}`}
+            fill
+            className="object-contain p-1"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            onError={() => setFailedUrls(prev => new Set(prev).add(currentImage.url))}
+          />
+        )}
       </div>
 
       {/* Setas de navegacao */}
@@ -248,6 +264,7 @@ export function ImageGalleryFull({
   const [showZoomPanel, setShowZoomPanel] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const hasMultipleImages = images.length > 1;
@@ -350,14 +367,19 @@ export function ImageGalleryFull({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <Image
-            src={images[mainIndex].url}
-            alt={productName}
-            fill
-            className="object-contain p-3 sm:p-4"
-            priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-          />
+          {failedUrls.has(images[mainIndex].url) ? (
+            <ImageFallback className="rounded-xl sm:rounded-2xl" />
+          ) : (
+            <Image
+              src={images[mainIndex].url}
+              alt={productName}
+              fill
+              className="object-contain p-3 sm:p-4"
+              priority
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={() => setFailedUrls(prev => new Set(prev).add(images[mainIndex].url))}
+            />
+          )}
 
           {/* Setas de navegacao na imagem grande */}
           {hasMultipleImages && (
@@ -462,13 +484,18 @@ export function ImageGalleryFull({
                            ? 'opacity-100 ring-2 ring-[#09354d]'
                            : 'opacity-60 hover:opacity-90'}`}
             >
-              <Image
-                src={image.url}
-                alt={`${productName} - miniatura ${index + 1}`}
-                fill
-                className="object-contain p-1"
-                sizes="80px"
-              />
+              {failedUrls.has(image.url) ? (
+                <ImageFallback />
+              ) : (
+                <Image
+                  src={image.url}
+                  alt={`${productName} - miniatura ${index + 1}`}
+                  fill
+                  className="object-contain p-1"
+                  sizes="80px"
+                  onError={() => setFailedUrls(prev => new Set(prev).add(image.url))}
+                />
+              )}
             </button>
           ))}
         </div>
