@@ -4,19 +4,19 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'lrasuvrzyzmmjumxrhzv.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'lrasuvrzyzmmjumxrhzv.supabase.co',
         port: '',
         pathname: '/storage/v1/object/sign/**',
       },
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'lrasuvrzyzmmjumxrhzv.supabase.co',
         port: '',
         pathname: '/**',
       },
@@ -27,7 +27,7 @@ const nextConfig = {
       {
         source: '/api/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=600' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
         ],
       },
     ];

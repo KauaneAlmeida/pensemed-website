@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProdutoCatalogo } from '@/lib/api';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import { codigoValido, getProdutoRedirect } from '@/lib/instrumentUtils';
-import { getProductImages, getOPMEProductImages } from '@/hooks/useProductImages';
+
+const PLACEHOLDER_IMAGE = '/images/placeholder-produto.svg';
 
 // Função para gerar URL do produto
 // O id composto tem formato: "tipo-nometabela-ID" (ex: "cme-caixa cervical translucente-5")
@@ -34,70 +35,12 @@ interface CatalogProductCardProps {
 }
 
 export default function CatalogProductCard({ produto }: CatalogProductCardProps) {
-  const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_url || null);
+  // Imagem é pré-carregada server-side - não fazer fetch client-side (falha em produção Vercel)
+  const imagemUrl = produto.imagem_url || null;
   const [imageError, setImageError] = useState(false);
-  // Se já temos imagem do servidor, não precisamos mostrar loading
-  const [loading, setLoading] = useState(!produto.imagem_url);
 
   const whatsappLink = getWhatsAppProdutoLink(produto.nome);
   const productUrl = getProductUrl(produto);
-
-  useEffect(() => {
-    // Se já temos imagem do servidor, pular fetch client-side
-    if (produto.imagem_url) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchImage = async () => {
-      // Extrair o ID numérico do id composto - está após o último hífen
-      const partes = produto.id.split('-');
-      const idString = partes[partes.length - 1];
-      const productId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
-
-      if (!productId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Para produtos OPME, usar função específica
-        if (produto.categoria_principal === 'OPME') {
-          const { data, error } = await getOPMEProductImages(productId);
-          if (!error && data && data.length > 0) {
-            // Filtrar imagens com ordem 0 (principal) e pegar a mais recente (maior ID)
-            const imagensOrdem0 = data.filter(img => img.ordem === 0);
-            const imagemPrincipal = imagensOrdem0.length > 0
-              ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
-              : data.reduce((a, b) => a.id > b.id ? a : b);
-            if (imagemPrincipal?.url) {
-              setImagemUrl(imagemPrincipal.url);
-            }
-          }
-        } else if (produto.caixa_tabela) {
-          // Para CME e Equipamentos, usar função padrão
-          const { data, error } = await getProductImages(productId, produto.caixa_tabela, produto.nome);
-
-          if (!error && data && data.length > 0) {
-            // Filtrar imagens principais (ordem 0 ou principal=true) e pegar a mais recente
-            const imagensPrincipais = data.filter(img => img.principal || img.ordem === 0);
-            const imagemPrincipal = imagensPrincipais.length > 0
-              ? imagensPrincipais.reduce((a, b) => (parseInt(a.id) > parseInt(b.id) ? a : b))
-              : data.reduce((a, b) => (parseInt(a.id) > parseInt(b.id) ? a : b));
-            if (imagemPrincipal?.url) {
-              setImagemUrl(imagemPrincipal.url);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao buscar imagem do produto:', err);
-      }
-
-      setLoading(false);
-    };
-
-    fetchImage();
-  }, [produto.id, produto.caixa_tabela, produto.categoria_principal, produto.nome, produto.imagem_url]);
 
   return (
     <Link
@@ -106,11 +49,7 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
     >
       {/* Imagem */}
       <div className="aspect-square relative overflow-hidden bg-white">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-[#205b67] rounded-full animate-spin" />
-          </div>
-        ) : imagemUrl && !imageError ? (
+        {imagemUrl && !imageError ? (
           <Image
             src={imagemUrl}
             alt={produto.nome}
@@ -120,11 +59,13 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <svg className="w-10 h-10 sm:w-16 sm:h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
+          <Image
+            src={PLACEHOLDER_IMAGE}
+            alt={produto.nome}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+          />
         )}
         {/* Badge categoria */}
         <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">

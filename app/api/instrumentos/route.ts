@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInstrumentosDaTabelaCached } from '@/lib/api';
+import { getInstrumentosDaTabela } from '@/lib/api';
 
 // Dinâmico porque usa searchParams, mas com cache na função e headers
 export const dynamic = 'force-dynamic';
@@ -18,13 +18,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const resultado = await getInstrumentosDaTabelaCached(tabela, pagina, porPagina);
+    const resultado = await getInstrumentosDaTabela(tabela, pagina, porPagina);
 
-    return NextResponse.json(resultado, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    });
+    return NextResponse.json(resultado);
   } catch (error) {
     console.error('[API /instrumentos] Erro:', error);
     return NextResponse.json(

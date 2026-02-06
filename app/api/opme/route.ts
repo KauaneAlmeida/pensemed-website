@@ -17,11 +17,7 @@ export async function GET(request: NextRequest) {
     // Se solicitado apenas categorias
     if (apenasCategoriasParam === 'true') {
       const categorias = await getCategoriasOPME();
-      return NextResponse.json({ categorias }, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
-        },
-      });
+      return NextResponse.json({ categorias });
     }
 
     const resultado = await getProdutosOPME({
@@ -76,10 +72,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ...resultado,
       categorias,
-    }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
     });
   } catch (error) {
     console.error('[API /opme] Erro:', error);

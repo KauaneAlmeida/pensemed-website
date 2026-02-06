@@ -20,11 +20,7 @@ export async function GET(request: NextRequest) {
 
     const resultado = await getEquipamentosDaTabela(tabela, pagina, porPagina);
 
-    return NextResponse.json(resultado, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    });
+    return NextResponse.json(resultado);
   } catch (error) {
     console.error('[API /equipamentos] Erro:', error);
     return NextResponse.json(

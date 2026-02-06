@@ -24,11 +24,7 @@ export async function GET(request: NextRequest) {
       ordenacao,
     });
 
-    return NextResponse.json(resultado, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    });
+    return NextResponse.json(resultado);
   } catch (error) {
     console.error('[API /catalogo] Erro:', error);
     return NextResponse.json(

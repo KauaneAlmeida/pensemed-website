@@ -1112,21 +1112,34 @@ export async function getEquipamentosDaTabela(
     const equipamentosPaginados = equipamentosOrdenados.slice(offset, offset + porPagina);
 
     // Pré-carregar imagens server-side para equipamentos sem imagem_url
+    // CRÍTICO: Client-side Supabase falha em produção Vercel
     if (tabelaImagens) {
+      let equipImgOk = 0;
+      let equipImgFail = 0;
       await Promise.all(equipamentosPaginados.map(async (equip) => {
-        if (equip.imagem_url) return;
+        if (equip.imagem_url) { equipImgOk++; return; }
         try {
-          const { data: imgData } = await getProductImagesServer(equip.id, nomeTabela, equip.nome);
-          if (imgData && imgData.length > 0) {
+          const { data: imgData, error: imgError } = await getProductImagesServer(equip.id, nomeTabela, equip.nome);
+          if (imgError) {
+            console.error(`[getEquipamentosDaTabela] Erro imagem "${equip.nome}":`, imgError);
+            equipImgFail++;
+          } else if (imgData && imgData.length > 0) {
             const principal = imgData.find(img => img.principal) || imgData[0];
             if (principal?.url) {
               equip.imagem_url = principal.url;
+              equipImgOk++;
+            } else {
+              equipImgFail++;
             }
+          } else {
+            equipImgFail++;
           }
-        } catch {
-          // Silenciar erros de imagem
+        } catch (err) {
+          console.error(`[getEquipamentosDaTabela] Exceção imagem "${equip.nome}":`, err);
+          equipImgFail++;
         }
       }));
+      console.log(`[getEquipamentosDaTabela] Imagens: ${equipImgOk} ok, ${equipImgFail} sem imagem`);
     }
 
     const total = equipamentosUnicos.length;
@@ -1802,10 +1815,14 @@ export async function getTodosProdutosCatalogo(
     const produtosPaginados = produtosFiltrados.slice(offset, offset + porPagina);
 
     // Pré-carregar imagens server-side para produtos da página que não têm imagem_url
-    // Isso evita que o client-side tente fazer fetch ao Supabase (que falha em produção na Vercel)
-    // Buscar em paralelo para não demorar demais
+    // CRÍTICO: Client-side Supabase falha em produção Vercel, então DEVE ser server-side
+    let imgCarregadas = 0;
+    let imgFalharam = 0;
     await Promise.all(produtosPaginados.map(async (produto) => {
-      if (produto.imagem_url) return; // Já tem imagem
+      if (produto.imagem_url) {
+        imgCarregadas++;
+        return;
+      }
 
       try {
         // Extrair o ID numérico do id composto (formato: "tipo-nomeTabela-ID")
@@ -1813,35 +1830,56 @@ export async function getTodosProdutosCatalogo(
         const idString = partes[partes.length - 1];
         const prodId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
 
-        if (!prodId) return;
+        if (!prodId) {
+          console.warn(`[getTodosProdutosCatalogo] ID não numérico para "${produto.nome}": ${produto.id}`);
+          imgFalharam++;
+          return;
+        }
 
         // Para OPME, buscar direto da tabela de imagens
         if (produto.categoria_principal === 'OPME') {
-          const { data: opmeImgs } = await supabase
+          const { data: opmeImgs, error: opmeErr } = await supabase
             .from('produtos_opme_imagens')
             .select('url, ordem')
             .eq('produto_id', prodId)
             .order('ordem', { ascending: true })
             .limit(1);
 
-          if (opmeImgs && opmeImgs.length > 0) {
+          if (opmeErr) {
+            console.error(`[getTodosProdutosCatalogo] Erro OPME imagem produto ${prodId}:`, opmeErr.message);
+            imgFalharam++;
+          } else if (opmeImgs && opmeImgs.length > 0) {
             produto.imagem_url = opmeImgs[0].url;
+            imgCarregadas++;
+          } else {
+            imgFalharam++;
           }
           return;
         }
 
         // Para CME e Equipamentos, usar getProductImagesServer
-        const { data: imgData } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
-        if (imgData && imgData.length > 0) {
+        const { data: imgData, error: imgError } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
+        if (imgError) {
+          console.error(`[getTodosProdutosCatalogo] Erro imagem "${produto.nome}" (tabela: ${produto.caixa_tabela}):`, imgError);
+          imgFalharam++;
+        } else if (imgData && imgData.length > 0) {
           const principal = imgData.find(img => img.principal) || imgData[0];
           if (principal?.url) {
             produto.imagem_url = principal.url;
+            imgCarregadas++;
+          } else {
+            imgFalharam++;
           }
+        } else {
+          imgFalharam++;
         }
       } catch (err) {
-        // Silenciar erros de imagem para não interromper o catálogo
+        console.error(`[getTodosProdutosCatalogo] Exceção ao buscar imagem de "${produto.nome}":`, err);
+        imgFalharam++;
       }
     }));
+
+    console.log(`[getTodosProdutosCatalogo] Imagens: ${imgCarregadas} carregadas, ${imgFalharam} sem imagem (de ${produtosPaginados.length} produtos)`);
 
     console.log(`[getTodosProdutosCatalogo] Retornando página ${pagina} com ${produtosPaginados.length} produtos`);
 

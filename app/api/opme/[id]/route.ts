@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProdutoOPMEById } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
 
-// ISR: revalidar a cada 5 minutos
-export const revalidate = 300;
+// Forçar renderização dinâmica para sempre buscar dados frescos
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
@@ -44,11 +44,7 @@ export async function GET(
       console.error('[API /opme/[id]] Erro ao pré-carregar imagens:', err);
     }
 
-    return NextResponse.json({ ...produto, preloadedImages }, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    });
+    return NextResponse.json({ ...produto, preloadedImages });
   } catch (error) {
     console.error('[API /opme/[id]] Erro:', error);
     return NextResponse.json(

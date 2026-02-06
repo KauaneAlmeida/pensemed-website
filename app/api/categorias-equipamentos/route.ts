@@ -15,11 +15,7 @@ export async function GET() {
       isProdutoUnico: isEquipamentoProdutoUnico(cat.nome_tabela) || isEquipamentoExpandido(cat.nome_tabela),
     }));
 
-    return NextResponse.json(categoriasComFlag, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
-      },
-    });
+    return NextResponse.json(categoriasComFlag);
   } catch (error) {
     console.error('[API /categorias-equipamentos] Erro:', error);
     return NextResponse.json([], { status: 500 });

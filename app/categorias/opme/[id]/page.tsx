@@ -8,27 +8,9 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import { ImageGalleryFull, GalleryImage } from '@/components/ImageGallery';
 import { getOPMEProductImages, OPMEImage } from '@/hooks/useProductImages';
 
-// Card de produto relacionado - seguindo padrão do CME e Equipamentos
+// Card de produto relacionado - imagem pré-carregada server-side
 function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME & { imagem_principal?: string | null } }) {
-  const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_principal || null);
-  const [loading, setLoading] = useState(!produto.imagem_principal);
-
-  useEffect(() => {
-    if (produto.imagem_principal) {
-      setLoading(false);
-      return;
-    }
-    getOPMEProductImages(produto.id).then(({ data }) => {
-      if (data && data.length > 0) {
-        const imagensOrdem0 = data.filter(img => img.ordem === 0);
-        const principal = imagensOrdem0.length > 0
-          ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
-          : data.reduce((a, b) => a.id > b.id ? a : b);
-        setImagemUrl(principal.url);
-      }
-      setLoading(false);
-    });
-  }, [produto.id, produto.imagem_principal]);
+  const imagemUrl = produto.imagem_principal || null;
 
   return (
     <Link
@@ -37,11 +19,7 @@ function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME & { imagem_p
     >
       {/* Imagem */}
       <div className="aspect-square relative overflow-hidden bg-white">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
-          </div>
-        ) : imagemUrl ? (
+        {imagemUrl ? (
           <Image
             src={imagemUrl}
             alt={produto.nome}
@@ -50,11 +28,13 @@ function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME & { imagem_p
             sizes="(max-width: 768px) 50vw, 25vw"
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
+          <Image
+            src="/images/placeholder-produto.svg"
+            alt={produto.nome}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 768px) 50vw, 25vw"
+          />
         )}
 
         {/* Badge categoria */}
