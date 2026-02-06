@@ -678,6 +678,41 @@ export async function getInstrumentosDaTabela(
     const offset = (pagina - 1) * porPagina;
     const instrumentosPaginados = instrumentosOrdenados.slice(offset, offset + porPagina);
 
+    // Pré-carregar imagens server-side para instrumentos sem imagem_url
+    // CRÍTICO: Client-side Supabase falha em produção Vercel
+    if (tabelaImagens) {
+      let instrImgOk = 0;
+      let instrImgFail = 0;
+      await Promise.all(instrumentosPaginados.map(async (instr: any) => {
+        if (instr.imagem_url) { instrImgOk++; return; }
+        try {
+          const { data: imgData, error: imgError } = await getProductImagesServer(
+            instr.id,
+            nomeTabela,
+            instr.nome
+          );
+          if (imgError) {
+            console.error(`[getInstrumentosDaTabela] Erro imagem "${instr.nome}":`, imgError);
+            instrImgFail++;
+          } else if (imgData && imgData.length > 0) {
+            const principal = imgData.find(img => img.principal) || imgData[0];
+            if (principal?.url) {
+              instr.imagem_url = principal.url;
+              instrImgOk++;
+            } else {
+              instrImgFail++;
+            }
+          } else {
+            instrImgFail++;
+          }
+        } catch (err) {
+          console.error(`[getInstrumentosDaTabela] Exceção imagem "${instr.nome}":`, err);
+          instrImgFail++;
+        }
+      }));
+      console.log(`[getInstrumentosDaTabela] Imagens: ${instrImgOk} ok, ${instrImgFail} sem imagem`);
+    }
+
     const total = instrumentosFiltrados.length;
     const totalPaginas = Math.ceil(total / porPagina);
 

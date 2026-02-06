@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import { aplicarAgrupamentosEspeciais, getBadgeVariacoes, InstrumentoAgrupado, codigoValido, produtoDeveSerOculto } from '@/lib/instrumentUtils';
 import { ImageGalleryCompact, GalleryImage } from '@/components/ImageGallery';
-import { getProductImages, getImageTableName } from '@/hooks/useProductImages';
+import { getImageTableName } from '@/hooks/useProductImages';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingScreen from '@/components/LoadingScreen';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -174,104 +174,73 @@ function SearchInput({
 }
 
 // Card de instrumento agrupado com suporte a galeria de imagens
-function InstrumentoCard({ instrumento, slugCaixa, nomeTabela, preloadedImages }: { instrumento: InstrumentoAgrupado; slugCaixa: string; nomeTabela: string; preloadedImages?: Map<string, GalleryImage[]> }) {
+function InstrumentoCard({ instrumento, slugCaixa, preloadedImages }: { instrumento: InstrumentoAgrupado; slugCaixa: string; preloadedImages?: Map<string, GalleryImage[]> }) {
   const whatsappLink = getWhatsAppProdutoLink(instrumento.nome);
   const primeiraVariacao = instrumento.variacoes[0] as Instrumento & { variacaoTexto?: string };
   const imagemUrlFallback = primeiraVariacao?.imagem_url || instrumento.imagem;
 
+  // Imagens: prioriza imagem pré-carregada server-side (via API), depois preloadedImages client-side, depois fallback
+  const serverImage = imagemUrlFallback ? [{ url: imagemUrlFallback, principal: true } as GalleryImage] : [];
+
   // Estado para imagens da tabela de imagens
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [loadingImages, setLoadingImages] = useState(true);
+  const [images, setImages] = useState<GalleryImage[]>(serverImage);
+  const [loadingImages, setLoadingImages] = useState(!imagemUrlFallback);
 
-  // Buscar imagens - usa preloadedImages se disponível, senão busca individualmente
+  // Tentar enriquecer com preloadedImages (galeria com múltiplas imagens) se disponível
   useEffect(() => {
-    const nomeParaBusca = primeiraVariacao?.nome || instrumento.nome;
-
-    // Tentar usar imagens pré-carregadas (match por nome normalizado)
-    if (preloadedImages && preloadedImages.size > 0) {
-      const nomeBuscaNorm = nomeParaBusca.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-
-      // Busca exata primeiro
-      const imagensPreloaded = preloadedImages.get(nomeBuscaNorm);
-      if (imagensPreloaded && imagensPreloaded.length > 0) {
-        setImages(imagensPreloaded);
-        setLoadingImages(false);
-        return;
-      }
-
-      // Busca por similaridade nas chaves pré-carregadas
-      const extrairPalavrasChave = (nome: string): string[] =>
-        nome.split(/\s+/).filter(p => p.length > 1 && !/^\d+[,.]?\d*$/.test(p) && !['MM', 'CM', 'X', 'N', 'GR', 'GRAU'].includes(p));
-
-      const palavrasProduto = extrairPalavrasChave(nomeBuscaNorm);
-      let melhorMatch: { key: string; score: number } | null = null;
-
-      for (const key of preloadedImages.keys()) {
-        const palavrasImagem = extrairPalavrasChave(key);
-        let matchesProduto = 0;
-        for (const pp of palavrasProduto) {
-          if (palavrasImagem.some(pi => pi === pp || pi.startsWith(pp) || pp.startsWith(pi) || (pi.length > 4 && pp.length > 4 && pi.substring(0, 5) === pp.substring(0, 5)))) matchesProduto++;
-        }
-        let matchesImagem = 0;
-        for (const pi of palavrasImagem) {
-          if (palavrasProduto.some(pp => pp === pi || pp.startsWith(pi) || pi.startsWith(pp) || (pp.length > 4 && pi.length > 4 && pp.substring(0, 5) === pi.substring(0, 5)))) matchesImagem++;
-        }
-        const score = ((matchesProduto / palavrasProduto.length) + (palavrasImagem.length > 0 ? matchesImagem / palavrasImagem.length : 0)) / 2;
-        const primeirasFazMatch = palavrasProduto.length > 0 && palavrasImagem.length > 0 && (palavrasProduto[0] === palavrasImagem[0] || palavrasProduto[0].startsWith(palavrasImagem[0]) || palavrasImagem[0].startsWith(palavrasProduto[0]));
-        if (score >= 0.4 && primeirasFazMatch && (!melhorMatch || score > melhorMatch.score)) {
-          melhorMatch = { key, score };
-        }
-      }
-
-      if (melhorMatch) {
-        const imgs = preloadedImages.get(melhorMatch.key);
-        if (imgs && imgs.length > 0) {
-          setImages(imgs);
-          setLoadingImages(false);
-          return;
-        }
-      }
-
-      // Nenhum match nas imagens pré-carregadas
-      if (imagemUrlFallback) {
-        setImages([{ url: imagemUrlFallback, principal: true }]);
-      }
+    if (!preloadedImages || preloadedImages.size === 0) {
+      // Sem preloadedImages - usar a imagem server-side que já temos
       setLoadingImages(false);
       return;
     }
 
-    // Fallback: busca individual (caso preloadedImages não esteja disponível)
-    const fetchImages = async () => {
-      let productId = typeof instrumento.id === 'string' ? parseInt(instrumento.id, 10) : instrumento.id;
-      if (isNaN(productId)) {
-        productId = 0;
-      }
+    const nomeParaBusca = primeiraVariacao?.nome || instrumento.nome;
+    const nomeBuscaNorm = nomeParaBusca.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-      try {
-        const { data, error } = await getProductImages(productId, nomeTabela, nomeParaBusca);
-
-        if (!error && data && data.length > 0) {
-          setImages(data.map(img => ({
-            id: img.id,
-            url: img.url,
-            ordem: img.ordem,
-            principal: img.principal,
-          })));
-        } else if (imagemUrlFallback) {
-          setImages([{ url: imagemUrlFallback, principal: true }]);
-        }
-      } catch (err) {
-        console.error('Erro ao buscar imagens:', err);
-        if (imagemUrlFallback) {
-          setImages([{ url: imagemUrlFallback, principal: true }]);
-        }
-      }
-
+    // Busca exata primeiro
+    const imagensPreloaded = preloadedImages.get(nomeBuscaNorm);
+    if (imagensPreloaded && imagensPreloaded.length > 0) {
+      setImages(imagensPreloaded);
       setLoadingImages(false);
-    };
+      return;
+    }
 
-    fetchImages();
-  }, [instrumento.id, nomeTabela, imagemUrlFallback, primeiraVariacao?.nome, instrumento.nome, preloadedImages]);
+    // Busca por similaridade nas chaves pré-carregadas
+    const extrairPalavrasChave = (nome: string): string[] =>
+      nome.split(/\s+/).filter(p => p.length > 1 && !/^\d+[,.]?\d*$/.test(p) && !['MM', 'CM', 'X', 'N', 'GR', 'GRAU'].includes(p));
+
+    const palavrasProduto = extrairPalavrasChave(nomeBuscaNorm);
+    let melhorMatch: { key: string; score: number } | null = null;
+
+    for (const key of preloadedImages.keys()) {
+      const palavrasImagem = extrairPalavrasChave(key);
+      let matchesProduto = 0;
+      for (const pp of palavrasProduto) {
+        if (palavrasImagem.some(pi => pi === pp || pi.startsWith(pp) || pp.startsWith(pi) || (pi.length > 4 && pp.length > 4 && pi.substring(0, 5) === pp.substring(0, 5)))) matchesProduto++;
+      }
+      let matchesImagem = 0;
+      for (const pi of palavrasImagem) {
+        if (palavrasProduto.some(pp => pp === pi || pp.startsWith(pi) || pi.startsWith(pp) || (pp.length > 4 && pi.length > 4 && pp.substring(0, 5) === pi.substring(0, 5)))) matchesImagem++;
+      }
+      const score = ((matchesProduto / palavrasProduto.length) + (palavrasImagem.length > 0 ? matchesImagem / palavrasImagem.length : 0)) / 2;
+      const primeirasFazMatch = palavrasProduto.length > 0 && palavrasImagem.length > 0 && (palavrasProduto[0] === palavrasImagem[0] || palavrasProduto[0].startsWith(palavrasImagem[0]) || palavrasImagem[0].startsWith(palavrasProduto[0]));
+      if (score >= 0.4 && primeirasFazMatch && (!melhorMatch || score > melhorMatch.score)) {
+        melhorMatch = { key, score };
+      }
+    }
+
+    if (melhorMatch) {
+      const imgs = preloadedImages.get(melhorMatch.key);
+      if (imgs && imgs.length > 0) {
+        setImages(imgs);
+        setLoadingImages(false);
+        return;
+      }
+    }
+
+    // Nenhum match nas preloadedImages - manter imagem server-side
+    setLoadingImages(false);
+  }, [instrumento.id, imagemUrlFallback, primeiraVariacao?.nome, instrumento.nome, preloadedImages]);
 
   // Usar sempre o ID para o link - é mais confiável que códigos que podem ser base64url
   const linkId = instrumento.id;
@@ -679,7 +648,6 @@ function CaixaCMEContent() {
                     key={instrumento.id}
                     instrumento={instrumento}
                     slugCaixa={categoriaSlug}
-                    nomeTabela={caixa?.nome_tabela || ''}
                     preloadedImages={preloadedImages}
                   />
                 ))}
