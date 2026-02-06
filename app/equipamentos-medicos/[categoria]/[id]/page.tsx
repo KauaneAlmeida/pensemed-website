@@ -323,6 +323,22 @@ export default async function EquipamentoDetailPage({
     }
   }
 
+  // Pré-carregar imagens da galeria do equipamento principal
+  let preloadedImages: { id?: string; url: string; ordem?: number; principal?: boolean }[] = [];
+  try {
+    const { data: imgData } = await getProductImagesServer(equipamento.id, nomeTabela, equipamento.nome);
+    if (imgData && imgData.length > 0) {
+      preloadedImages = imgData.map(img => ({
+        id: img.id != null ? String(img.id) : undefined,
+        url: img.url,
+        ordem: img.ordem,
+        principal: img.principal,
+      }));
+    }
+  } catch (err) {
+    console.error('[EquipamentoDetailPage] Erro ao pré-carregar imagens da galeria:', err);
+  }
+
   return (
     <div className="min-h-screen bg-white pt-20 sm:pt-24">
       {/* Breadcrumb discreto */}
@@ -374,6 +390,7 @@ export default async function EquipamentoDetailPage({
           descricaoCompleta={descricaoCompleta}
           mostrarCodigo={mostrarCodigo}
           nomeTabela={nomeTabela}
+          preloadedImages={preloadedImages}
           isProdutoUnico={isProdutoUnico}
           totalItensCategoria={categoria?.total_itens || 0}
         />

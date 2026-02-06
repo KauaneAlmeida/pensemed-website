@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProdutoOPMEById } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 
 // ISR: revalidar a cada 5 minutos
 export const revalidate = 300;
@@ -27,7 +28,23 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(produto, {
+    // Pré-carregar imagens do produto no servidor
+    let preloadedImages: any[] = [];
+    try {
+      const { data: imagens } = await supabase
+        .from('produtos_opme_imagens')
+        .select('id, produto_id, url, ordem')
+        .eq('produto_id', id)
+        .order('ordem', { ascending: true });
+
+      if (imagens && imagens.length > 0) {
+        preloadedImages = imagens;
+      }
+    } catch (err) {
+      console.error('[API /opme/[id]] Erro ao pré-carregar imagens:', err);
+    }
+
+    return NextResponse.json({ ...produto, preloadedImages }, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },

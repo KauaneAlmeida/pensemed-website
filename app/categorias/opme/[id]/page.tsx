@@ -9,14 +9,17 @@ import { ImageGalleryFull, GalleryImage } from '@/components/ImageGallery';
 import { getOPMEProductImages, OPMEImage } from '@/hooks/useProductImages';
 
 // Card de produto relacionado - seguindo padrão do CME e Equipamentos
-function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME }) {
-  const [imagemUrl, setImagemUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME & { imagem_principal?: string | null } }) {
+  const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_principal || null);
+  const [loading, setLoading] = useState(!produto.imagem_principal);
 
   useEffect(() => {
+    if (produto.imagem_principal) {
+      setLoading(false);
+      return;
+    }
     getOPMEProductImages(produto.id).then(({ data }) => {
       if (data && data.length > 0) {
-        // Filtrar apenas imagens com ordem 0 (principal) e pegar a mais recente (maior ID)
         const imagensOrdem0 = data.filter(img => img.ordem === 0);
         const principal = imagensOrdem0.length > 0
           ? imagensOrdem0.reduce((a, b) => a.id > b.id ? a : b)
@@ -25,7 +28,7 @@ function ProdutoRelacionadoCard({ produto }: { produto: ProdutoOPME }) {
       }
       setLoading(false);
     });
-  }, [produto.id]);
+  }, [produto.id, produto.imagem_principal]);
 
   return (
     <Link
@@ -132,31 +135,52 @@ export default function OPMEDetailPage({
         const data = await response.json();
         setProduto(data);
 
-        // Buscar imagens do produto
-        const productId = parseInt(params.id, 10);
-        const { data: imagesData } = await getOPMEProductImages(productId);
-        if (imagesData && imagesData.length > 0) {
+        // Usar imagens pré-carregadas do servidor (se disponíveis)
+        const imagesData = data.preloadedImages || [];
+        if (imagesData.length > 0) {
           // Remover duplicatas: manter apenas uma imagem por ordem (a mais recente)
-          const imagensPorOrdem = new Map<number, typeof imagesData[0]>();
-          imagesData.forEach(img => {
+          const imagensPorOrdem = new Map<number, any>();
+          imagesData.forEach((img: any) => {
             const existente = imagensPorOrdem.get(img.ordem);
-            // Manter a mais recente (maior ID)
             if (!existente || img.id > existente.id) {
               imagensPorOrdem.set(img.ordem, img);
             }
           });
 
-          // Converter para array e ordenar por ordem
           const imagensUnicas = Array.from(imagensPorOrdem.values())
-            .sort((a, b) => a.ordem - b.ordem)
-            .slice(0, 2); // Limitar a 2 imagens
+            .sort((a: any, b: any) => a.ordem - b.ordem)
+            .slice(0, 2);
 
-          setImages(imagensUnicas.map(img => ({
+          setImages(imagensUnicas.map((img: any) => ({
             id: String(img.id),
             url: img.url,
             ordem: img.ordem,
             principal: img.ordem === 0,
           })));
+        } else {
+          // Fallback: buscar imagens client-side se não vieram pré-carregadas
+          const productId = parseInt(params.id, 10);
+          const { data: clientImagesData } = await getOPMEProductImages(productId);
+          if (clientImagesData && clientImagesData.length > 0) {
+            const imagensPorOrdem = new Map<number, typeof clientImagesData[0]>();
+            clientImagesData.forEach(img => {
+              const existente = imagensPorOrdem.get(img.ordem);
+              if (!existente || img.id > existente.id) {
+                imagensPorOrdem.set(img.ordem, img);
+              }
+            });
+
+            const imagensUnicas = Array.from(imagensPorOrdem.values())
+              .sort((a, b) => a.ordem - b.ordem)
+              .slice(0, 2);
+
+            setImages(imagensUnicas.map(img => ({
+              id: String(img.id),
+              url: img.url,
+              ordem: img.ordem,
+              principal: img.ordem === 0,
+            })));
+          }
         }
         setLoadingImages(false);
 

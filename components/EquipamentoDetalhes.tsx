@@ -31,6 +31,7 @@ interface EquipamentoDetalhesProps {
   descricaoCompleta: string;
   mostrarCodigo: boolean;
   nomeTabela?: string;
+  preloadedImages?: GalleryImage[];
   isProdutoUnico?: boolean;
   totalItensCategoria?: number;
 }
@@ -46,6 +47,7 @@ export default function EquipamentoDetalhes({
   descricaoCompleta,
   mostrarCodigo,
   nomeTabela,
+  preloadedImages,
   isProdutoUnico = false,
   totalItensCategoria = 0,
 }: EquipamentoDetalhesProps) {
@@ -59,6 +61,13 @@ export default function EquipamentoDetalhes({
 
   // Buscar imagens do produto da tabela de imagens
   useEffect(() => {
+    // Se temos imagens pré-carregadas do servidor e não houve mudança de variação, usar diretamente
+    if (preloadedImages && preloadedImages.length > 0 && !variacaoSelecionada) {
+      setImages(preloadedImages);
+      setLoadingImages(false);
+      return;
+    }
+
     const fetchImages = async () => {
       if (!nomeTabela) {
         setLoadingImages(false);
@@ -97,7 +106,7 @@ export default function EquipamentoDetalhes({
     };
 
     fetchImages();
-  }, [equipamento.id, equipamento.imagem_url, variacaoSelecionada, nomeTabela]);
+  }, [equipamento.id, equipamento.imagem_url, variacaoSelecionada, nomeTabela, preloadedImages]);
 
   // Dados a exibir (da variação selecionada ou do equipamento original)
   const dadosExibicao = variacaoSelecionada || {

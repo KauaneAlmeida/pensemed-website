@@ -1785,28 +1785,45 @@ export async function getTodosProdutosCatalogo(
 
     // Pré-carregar imagens server-side para produtos da página que não têm imagem_url
     // Isso evita que o client-side tente fazer fetch ao Supabase (que falha em produção na Vercel)
-    for (const produto of produtosPaginados) {
-      if (!produto.imagem_url && (produto as any).temImagemNaTabela) {
-        try {
-          // Extrair o ID numérico do id composto (formato: "tipo-nomeTabela-ID")
-          const partes = produto.id.split('-');
-          const idString = partes[partes.length - 1];
-          const prodId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
+    // Buscar em paralelo para não demorar demais
+    await Promise.all(produtosPaginados.map(async (produto) => {
+      if (produto.imagem_url) return; // Já tem imagem
 
-          if (prodId) {
-            const { data: imgData } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
-            if (imgData && imgData.length > 0) {
-              const principal = imgData.find(img => img.principal) || imgData[0];
-              if (principal?.url) {
-                produto.imagem_url = principal.url;
-              }
-            }
+      try {
+        // Extrair o ID numérico do id composto (formato: "tipo-nomeTabela-ID")
+        const partes = produto.id.split('-');
+        const idString = partes[partes.length - 1];
+        const prodId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
+
+        if (!prodId) return;
+
+        // Para OPME, buscar direto da tabela de imagens
+        if (produto.categoria_principal === 'OPME') {
+          const { data: opmeImgs } = await supabase
+            .from('produtos_opme_imagens')
+            .select('url, ordem')
+            .eq('produto_id', prodId)
+            .order('ordem', { ascending: true })
+            .limit(1);
+
+          if (opmeImgs && opmeImgs.length > 0) {
+            produto.imagem_url = opmeImgs[0].url;
           }
-        } catch (err) {
-          // Silenciar erros de imagem para não interromper o catálogo
+          return;
         }
+
+        // Para CME e Equipamentos, usar getProductImagesServer
+        const { data: imgData } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
+        if (imgData && imgData.length > 0) {
+          const principal = imgData.find(img => img.principal) || imgData[0];
+          if (principal?.url) {
+            produto.imagem_url = principal.url;
+          }
+        }
+      } catch (err) {
+        // Silenciar erros de imagem para não interromper o catálogo
       }
-    }
+    }));
 
     console.log(`[getTodosProdutosCatalogo] Retornando página ${pagina} com ${produtosPaginados.length} produtos`);
 
