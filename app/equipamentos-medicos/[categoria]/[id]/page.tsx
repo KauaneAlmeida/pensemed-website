@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento, isEquipamentoProdutoUnico } from '@/lib/api';
 import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento, tabelaToNomeExibicao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
+import { getProductImagesServer } from '@/lib/productImagesServer';
 import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
 
@@ -301,6 +302,26 @@ export default async function EquipamentoDetailPage({
     'Equipamentos Médicos',
     4
   );
+
+  // Pré-carregar imagens dos produtos relacionados no servidor
+  for (const relacionado of produtosRelacionados) {
+    if (!relacionado.imagem_url) {
+      try {
+        const prodId = typeof relacionado.id === 'string' ? parseInt(relacionado.id, 10) : relacionado.id;
+        if (!isNaN(prodId)) {
+          const { data: imgData } = await getProductImagesServer(prodId, relacionado.caixa_tabela, relacionado.nome);
+          if (imgData && imgData.length > 0) {
+            const principal = imgData.find(img => img.principal) || imgData[0];
+            if (principal?.url) {
+              relacionado.imagem_url = principal.url;
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`[EquipamentoDetailPage] Erro ao pré-carregar imagem para "${relacionado.nome}":`, err);
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white pt-20 sm:pt-24">

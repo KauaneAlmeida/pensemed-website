@@ -216,6 +216,26 @@ export default async function InstrumentoDetailPage({
     4
   );
 
+  // Pré-carregar imagens dos produtos relacionados no servidor
+  for (const relacionado of produtosRelacionados) {
+    if (!relacionado.imagem_url) {
+      try {
+        const prodId = typeof relacionado.id === 'string' ? parseInt(relacionado.id, 10) : relacionado.id;
+        if (!isNaN(prodId)) {
+          const { data: imgData } = await getProductImagesServer(prodId, relacionado.caixa_tabela, relacionado.nome);
+          if (imgData && imgData.length > 0) {
+            const principal = imgData.find(img => img.principal) || imgData[0];
+            if (principal?.url) {
+              relacionado.imagem_url = principal.url;
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`[InstrumentoDetailPage] Erro ao pré-carregar imagem relacionado "${relacionado.nome}":`, err);
+      }
+    }
+  }
+
   // Pré-carregar imagens do produto no servidor para evitar chamadas client-side ao Supabase
   let preloadedImages: GalleryImage[] = [];
   try {

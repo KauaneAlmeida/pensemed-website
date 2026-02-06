@@ -26,9 +26,16 @@ export default function ProdutoRelacionadoCard({
 }: ProdutoRelacionadoCardProps) {
   const [imagemUrl, setImagemUrl] = useState<string | null>(imagemUrlFallback || null);
   const [imageError, setImageError] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Se já temos imagem do servidor, não precisamos mostrar loading
+  const [loading, setLoading] = useState(!imagemUrlFallback);
 
   useEffect(() => {
+    // Se já temos imagem do servidor, pular fetch client-side
+    if (imagemUrlFallback) {
+      setLoading(false);
+      return;
+    }
+
     const fetchImage = async () => {
       const productId = typeof id === 'string' ? parseInt(id, 10) : id;
 
@@ -56,7 +63,7 @@ export default function ProdutoRelacionadoCard({
     };
 
     fetchImage();
-  }, [id, caixaTabela, nome]);
+  }, [id, caixaTabela, nome, imagemUrlFallback]);
 
   const baseUrl = tipo === 'equipamentos' ? '/equipamentos-medicos' : '/instrumentacao-cme';
   const hoverColor = tipo === 'equipamentos' ? 'hover:border-[#2a7a8a]/30' : 'hover:border-[#205b67]/30';

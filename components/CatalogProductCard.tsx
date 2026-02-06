@@ -36,12 +36,19 @@ interface CatalogProductCardProps {
 export default function CatalogProductCard({ produto }: CatalogProductCardProps) {
   const [imagemUrl, setImagemUrl] = useState<string | null>(produto.imagem_url || null);
   const [imageError, setImageError] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Se já temos imagem do servidor, não precisamos mostrar loading
+  const [loading, setLoading] = useState(!produto.imagem_url);
 
   const whatsappLink = getWhatsAppProdutoLink(produto.nome);
   const productUrl = getProductUrl(produto);
 
   useEffect(() => {
+    // Se já temos imagem do servidor, pular fetch client-side
+    if (produto.imagem_url) {
+      setLoading(false);
+      return;
+    }
+
     const fetchImage = async () => {
       // Extrair o ID numérico do id composto - está após o último hífen
       const partes = produto.id.split('-');
@@ -90,7 +97,7 @@ export default function CatalogProductCard({ produto }: CatalogProductCardProps)
     };
 
     fetchImage();
-  }, [produto.id, produto.caixa_tabela, produto.categoria_principal, produto.nome]);
+  }, [produto.id, produto.caixa_tabela, produto.categoria_principal, produto.nome, produto.imagem_url]);
 
   return (
     <Link

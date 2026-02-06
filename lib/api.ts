@@ -1383,6 +1383,78 @@ export async function getTodosProdutosCatalogo(
         const caixaNome = tabelaToNomeExibicao(nomeTabela);
         const caixaSlugAtual = tabelaToSlug(nomeTabela);
 
+        // Se é tabela expandida, cada item vira um card individual no catálogo
+        if (isEquipamentoExpandido(nomeTabela)) {
+          console.log(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}": expandida`);
+
+          const { data: itensExpandidos, error: erroExpand } = await supabase
+            .from(nomeTabela)
+            .select('*')
+            .order('nome', { ascending: true });
+
+          if (erroExpand || !itensExpandidos || itensExpandidos.length === 0) {
+            console.warn(`[getTodosProdutosCatalogo] Tabela expandida "${nomeTabela}" vazia ou com erro`);
+            continue;
+          }
+
+          // Buscar imagens de todos os produtos desta tabela
+          const tabelaImgExpand = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+          let imagensPorProduto: Record<number, string> = {};
+          if (tabelaImgExpand) {
+            try {
+              const { data: imgData } = await supabase
+                .from(tabelaImgExpand)
+                .select('produto_id, url, ordem, principal')
+                .order('ordem', { ascending: true });
+
+              if (imgData) {
+                for (const img of imgData) {
+                  if (!(img.produto_id in imagensPorProduto) || img.principal) {
+                    imagensPorProduto[img.produto_id] = img.url;
+                  }
+                }
+              }
+            } catch {
+              // Ignorar erro de tabela de imagens
+            }
+          }
+
+          for (const item of itensExpandidos) {
+            const itemId = item.id;
+            if (!itemId) continue;
+
+            const slugExpandido = tabelaToSlug(`${nomeTabela}__${itemId}`);
+            const imagemUrl = imagensPorProduto[itemId] || item.imagem_url || null;
+
+            todosProdutos.push({
+              id: `equip-${nomeTabela}-${itemId}`,
+              nome: item.nome,
+              codigo: String(itemId),
+              descricao: item.descricao || null,
+              imagem_url: imagemUrl,
+              categoria_principal: 'Equipamentos Médicos',
+              caixa_tabela: nomeTabela,
+              caixa_nome: item.nome,
+              caixa_slug: slugExpandido,
+              temImagemNaTabela: !!imagemUrl,
+            });
+          }
+
+          // Contagem para filtro lateral
+          for (const item of itensExpandidos) {
+            if (!item.id) continue;
+            const slugItem = tabelaToSlug(`${nomeTabela}__${item.id}`);
+            contagemCaixas.set(slugItem, {
+              nome: item.nome,
+              slug: slugItem,
+              categoria: 'Equipamentos Médicos',
+              total: 1,
+            });
+          }
+
+          continue;
+        }
+
         // Se é produto único, adicionar apenas 1 item representando a categoria
         if (isEquipamentoProdutoUnico(nomeTabela)) {
           console.log(`[getTodosProdutosCatalogo] Tabela Equip "${nomeTabela}": produto único`);
