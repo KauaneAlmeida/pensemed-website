@@ -1111,6 +1111,24 @@ export async function getEquipamentosDaTabela(
     const offset = (pagina - 1) * porPagina;
     const equipamentosPaginados = equipamentosOrdenados.slice(offset, offset + porPagina);
 
+    // Pré-carregar imagens server-side para equipamentos sem imagem_url
+    if (tabelaImagens) {
+      await Promise.all(equipamentosPaginados.map(async (equip) => {
+        if (equip.imagem_url) return;
+        try {
+          const { data: imgData } = await getProductImagesServer(equip.id, nomeTabela, equip.nome);
+          if (imgData && imgData.length > 0) {
+            const principal = imgData.find(img => img.principal) || imgData[0];
+            if (principal?.url) {
+              equip.imagem_url = principal.url;
+            }
+          }
+        } catch {
+          // Silenciar erros de imagem
+        }
+      }));
+    }
+
     const total = equipamentosUnicos.length;
     const totalPaginas = Math.ceil(total / porPagina);
 

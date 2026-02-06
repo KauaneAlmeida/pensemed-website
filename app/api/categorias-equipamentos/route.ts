@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getCategoriasEquipamentosCached, isEquipamentoProdutoUnico, isEquipamentoExpandido } from '@/lib/api';
+import { getCategoriasEquipamentos, isEquipamentoProdutoUnico, isEquipamentoExpandido } from '@/lib/api';
 
-// ISR: revalidar a cada 10 minutos
-export const revalidate = 600;
+// Dinâmico para sempre buscar dados frescos do Supabase
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const categorias = await getCategoriasEquipamentosCached();
+    const categorias = await getCategoriasEquipamentos();
 
     // Adicionar flag de produto único em cada categoria
     // Itens de tabelas expandidas (equipamentos_medicos) também são produto único

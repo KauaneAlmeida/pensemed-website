@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEquipamentosDaTabelaCached } from '@/lib/api';
+import { getEquipamentosDaTabela } from '@/lib/api';
 
-// Dinâmico porque usa searchParams, mas com cache na função e headers
+// Dinâmico para sempre buscar dados frescos do Supabase
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const resultado = await getEquipamentosDaTabelaCached(tabela, pagina, porPagina);
+    const resultado = await getEquipamentosDaTabela(tabela, pagina, porPagina);
 
     return NextResponse.json(resultado, {
       headers: {
