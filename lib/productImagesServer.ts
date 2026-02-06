@@ -95,7 +95,7 @@ function gerarSlugProduto(nome: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function getImageTableName(tableName: string, productId?: number): string {
+export function getImageTableName(tableName: string, productId?: number): string {
   if (productId) {
     const chaveEspecial = `${tableName}:${productId}`;
     if (MAPEAMENTO_PRODUTO_IMAGENS[chaveEspecial]) {

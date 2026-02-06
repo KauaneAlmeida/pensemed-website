@@ -6,8 +6,6 @@ import Link from 'next/link';
 import { getWhatsAppProdutoLink } from '@/lib/whatsapp';
 import { aplicarAgrupamentosEspeciais, getBadgeVariacoes, InstrumentoAgrupado, codigoValido, produtoDeveSerOculto } from '@/lib/instrumentUtils';
 import { ImageGalleryCompact, GalleryImage } from '@/components/ImageGallery';
-import { getImageTableName } from '@/hooks/useProductImages';
-import { supabase } from '@/lib/supabaseClient';
 import LoadingScreen from '@/components/LoadingScreen';
 import ShareDropdown from '@/components/ShareDropdown';
 import BackButton from '@/components/BackButton';
@@ -347,7 +345,12 @@ function CaixaCMEContent() {
         setCaixa(caixaAtual);
         setOutrasCaixas(caixas.filter(c => c.slug !== categoriaSlug));
 
-        const resInstrumentos = await fetch(`/api/instrumentos?tabela=${encodeURIComponent(caixaAtual.nome_tabela)}`);
+        // Buscar instrumentos e imagens em paralelo (ambos dependem apenas de nome_tabela)
+        const [resInstrumentos, resImagens] = await Promise.all([
+          fetch(`/api/instrumentos?tabela=${encodeURIComponent(caixaAtual.nome_tabela)}`),
+          fetch(`/api/instrumentos-imagens?tabela=${encodeURIComponent(caixaAtual.nome_tabela)}`),
+        ]);
+
         const dados = await resInstrumentos.json();
         const instrumentosRaw: Instrumento[] = dados.instrumentos || [];
         setTotalOriginal(instrumentosRaw.length);
@@ -358,22 +361,19 @@ function CaixaCMEContent() {
           nome: i.nome,
           codigo: i.codigo,
           descricao: i.descricao,
-          imagem: i.imagem_url, // Mapeia imagem_url para imagem (nome esperado pela interface)
-          imagem_url: i.imagem_url // Mantém também como imagem_url para compatibilidade
+          imagem: i.imagem_url,
+          imagem_url: i.imagem_url
         })), caixaAtual.nome_tabela);
 
         setInstrumentosAgrupados(agrupados);
         setInstrumentosFiltrados(agrupados);
 
-        // Pré-carregar todas as imagens da tabela de imagens em uma única query
+        // Construir mapa de imagens pré-carregadas via API (server-side)
         try {
-          const imageTableName = getImageTableName(caixaAtual.nome_tabela);
-          const { data: todasImagens } = await supabase
-            .from(imageTableName)
-            .select('*')
-            .order('ordem', { ascending: true });
+          const dadosImagens = await resImagens.json();
+          const todasImagens = dadosImagens.imagens || [];
 
-          if (todasImagens && todasImagens.length > 0) {
+          if (todasImagens.length > 0) {
             const imageMap = new Map<string, GalleryImage[]>();
             for (const img of todasImagens) {
               const nome = (img.produto_nome || img.produto_slug || img.nome || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-_]/g, ' ').trim();
@@ -392,7 +392,7 @@ function CaixaCMEContent() {
             setPreloadedImages(imageMap);
           }
         } catch (imgErr) {
-          console.error('Erro ao pré-carregar imagens:', imgErr);
+          console.error('Erro ao processar imagens:', imgErr);
         }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
