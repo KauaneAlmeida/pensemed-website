@@ -3,6 +3,7 @@ import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginad
 import { unstable_cache } from 'next/cache';
 import { devLog, logError, CACHE_CONFIG } from './cache';
 import { produtoDeveSerOcultoDaTabela, produtoOPMEDeveSerOculto } from './instrumentUtils';
+import { getProductImagesServer } from './productImagesServer';
 
 // Flag para habilitar/desabilitar logs detalhados
 const ENABLE_DETAILED_LOGS = process.env.NODE_ENV === 'development';
@@ -1781,6 +1782,31 @@ export async function getTodosProdutosCatalogo(
     const totalPaginas = Math.ceil(total / porPagina);
     const offset = (pagina - 1) * porPagina;
     const produtosPaginados = produtosFiltrados.slice(offset, offset + porPagina);
+
+    // Pré-carregar imagens server-side para produtos da página que não têm imagem_url
+    // Isso evita que o client-side tente fazer fetch ao Supabase (que falha em produção na Vercel)
+    for (const produto of produtosPaginados) {
+      if (!produto.imagem_url && (produto as any).temImagemNaTabela) {
+        try {
+          // Extrair o ID numérico do id composto (formato: "tipo-nomeTabela-ID")
+          const partes = produto.id.split('-');
+          const idString = partes[partes.length - 1];
+          const prodId = /^\d+$/.test(idString) ? parseInt(idString, 10) : null;
+
+          if (prodId) {
+            const { data: imgData } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
+            if (imgData && imgData.length > 0) {
+              const principal = imgData.find(img => img.principal) || imgData[0];
+              if (principal?.url) {
+                produto.imagem_url = principal.url;
+              }
+            }
+          }
+        } catch (err) {
+          // Silenciar erros de imagem para não interromper o catálogo
+        }
+      }
+    }
 
     console.log(`[getTodosProdutosCatalogo] Retornando página ${pagina} com ${produtosPaginados.length} produtos`);
 

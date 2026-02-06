@@ -128,6 +128,8 @@ function getImageTableName(tableName: string, productId?: number): string {
     'gerador rf  surgimax plus + pedal': 'gerador_rf_surgimax_plus_pedal_imagens',
     'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
     'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
+    'equipamentos_medicos': 'equipamentos_medicos_imagens',
+    'produtos_opme': 'produtos_opme_imagens',
   };
 
   if (mappings[tableName]) {
@@ -139,7 +141,7 @@ function getImageTableName(tableName: string, productId?: number): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[–—]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/[^a-z0-9\s_]/g, '')
     .replace(/\s+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')

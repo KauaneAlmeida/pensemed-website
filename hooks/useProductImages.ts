@@ -558,6 +558,8 @@ function getImageTableName(tableName: string, productId?: number): string {
     'gerador rf  surgimax plus + pedal': 'gerador_rf_surgimax_plus_pedal_imagens',
     'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
     'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
+    'equipamentos_medicos': 'equipamentos_medicos_imagens',
+    'produtos_opme': 'produtos_opme_imagens',
   };
 
   if (mappings[tableName]) {
@@ -565,13 +567,13 @@ function getImageTableName(tableName: string, productId?: number): string {
   }
 
   // Fallback: converte automaticamente
-  // Remove caracteres especiais, substitui espaços por underscores
+  // Remove caracteres especiais, substitui espaços por underscores (preserva underscores)
   return tableName
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Remove acentos
     .replace(/[–—]/g, '') // Remove travessões
-    .replace(/[^a-z0-9\s]/g, '') // Remove caracteres especiais
+    .replace(/[^a-z0-9\s_]/g, '') // Remove caracteres especiais (preserva underscores)
     .replace(/\s+/g, '_') // Espaços para underscores
     .replace(/_+/g, '_') // Remove underscores duplos
     .replace(/^_|_$/g, '') // Remove underscores no início/fim
