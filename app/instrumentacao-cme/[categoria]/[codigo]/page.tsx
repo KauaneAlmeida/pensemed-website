@@ -6,6 +6,8 @@ import { slugToTabela, codigoValido, enriquecerDescricao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import InstrumentoDetalhes from '@/components/InstrumentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
+import { getProductImagesServer } from '@/lib/productImagesServer';
+import { GalleryImage } from '@/components/ImageGallery';
 
 // ISR: revalidar a cada 5 minutos
 export const revalidate = 300;
@@ -214,6 +216,23 @@ export default async function InstrumentoDetailPage({
     4
   );
 
+  // Pré-carregar imagens do produto no servidor para evitar chamadas client-side ao Supabase
+  let preloadedImages: GalleryImage[] = [];
+  try {
+    const productId = instrumento.id || 0;
+    const { data: imgData } = await getProductImagesServer(productId, nomeTabela, instrumento.nome);
+    if (imgData && imgData.length > 0) {
+      preloadedImages = imgData.map((img: any) => ({
+        id: img.id,
+        url: img.url,
+        ordem: img.ordem,
+        principal: img.principal,
+      }));
+    }
+  } catch (err) {
+    console.error('[InstrumentoDetailPage] Erro ao pré-carregar imagens:', err);
+  }
+
   return (
     <div className="min-h-screen bg-white pt-20 sm:pt-24">
       {/* Breadcrumb discreto */}
@@ -257,6 +276,7 @@ export default async function InstrumentoDetailPage({
           descricaoCompleta={descricaoCompleta}
           mostrarCodigo={mostrarCodigo}
           nomeTabela={nomeTabela}
+          preloadedImages={preloadedImages}
         />
       </div>
 

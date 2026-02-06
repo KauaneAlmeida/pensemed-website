@@ -66,9 +66,10 @@ export default function EquipamentoDetalhes({
       }
 
       const productId = variacaoSelecionada?.id || equipamento.id;
+      const productName = variacaoSelecionada?.nome || equipamento.nome;
 
       try {
-        const { data, error } = await getProductImages(productId, nomeTabela);
+        const { data, error } = await getProductImages(productId, nomeTabela, productName);
         if (!error && data && data.length > 0) {
           setImages(data.map(img => ({
             id: img.id,

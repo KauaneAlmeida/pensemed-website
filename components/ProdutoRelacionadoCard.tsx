@@ -25,6 +25,7 @@ export default function ProdutoRelacionadoCard({
   tipo = 'cme',
 }: ProdutoRelacionadoCardProps) {
   const [imagemUrl, setImagemUrl] = useState<string | null>(imagemUrlFallback || null);
+  const [imageError, setImageError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,12 +74,13 @@ export default function ProdutoRelacionadoCard({
           <div className="flex items-center justify-center h-full">
             <div className={`w-6 h-6 sm:w-8 sm:h-8 border-2 border-gray-200 ${spinnerColor} rounded-full animate-spin`} />
           </div>
-        ) : imagemUrl ? (
+        ) : imagemUrl && !imageError ? (
           <Image
             src={imagemUrl}
             alt={nome}
             fill
             className="object-contain p-2 sm:p-3 group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="flex items-center justify-center h-full">

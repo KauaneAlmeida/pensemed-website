@@ -289,6 +289,7 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'gerador rf  surgimax plus + pedal': 'gerador_rf_surgimax_plus_pedal_imagens',
   'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
   'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
+  'equipamentos_medicos': 'equipamentos_medicos_imagens',
 };
 
 /**
@@ -903,7 +904,7 @@ const TABELAS_EQUIPAMENTOS = [
   'gerador rf  surgimax plus + pedal',
   'laser lombar delight',
   'stryker 5400-50 core console + pedal',
-  // Adicione mais tabelas conforme necessário
+  'equipamentos_medicos',
 ];
 
 /**
@@ -920,6 +921,62 @@ export async function getCategoriasEquipamentos(): Promise<CategoriaEquipamento[
       console.log(`[getCategoriasEquipamentos] Processando tabela: "${nomeTabela}"`);
 
       try {
+        // Verificar se é tabela expandida (cada item vira um card individual)
+        if (TABELAS_EQUIPAMENTOS_EXPANDIDOS.includes(nomeTabela)) {
+          console.log(`[getCategoriasEquipamentos] Tabela "${nomeTabela}" é expandida - criando cards individuais`);
+
+          const { data: todosItens, error: erroItens } = await supabase
+            .from(nomeTabela)
+            .select('*')
+            .order('nome', { ascending: true });
+
+          if (erroItens || !todosItens || todosItens.length === 0) {
+            console.warn(`[getCategoriasEquipamentos] Tabela expandida "${nomeTabela}" vazia ou com erro`);
+            continue;
+          }
+
+          // Buscar imagens de todos os produtos desta tabela
+          const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+          let imagensPorProduto: Record<number, string> = {};
+          if (tabelaImagens) {
+            const { data: imgData } = await supabase
+              .from(tabelaImagens)
+              .select('produto_id, url, ordem, principal')
+              .order('ordem', { ascending: true });
+
+            if (imgData) {
+              for (const img of imgData) {
+                // Usar a primeira imagem (ou principal) de cada produto
+                if (!imagensPorProduto[img.produto_id] || img.principal) {
+                  imagensPorProduto[img.produto_id] = img.url;
+                }
+              }
+            }
+          }
+
+          for (const item of todosItens) {
+            const itemId = item.id;
+            if (!itemId) continue;
+
+            // Slug especial: equipamentos_medicos__<id>
+            const slugItem = tabelaToSlug(`${nomeTabela}__${itemId}`);
+            const imagemUrl = imagensPorProduto[itemId] || item.imagem_url || null;
+
+            const categoria: CategoriaEquipamento = {
+              nome_tabela: nomeTabela,
+              nome_exibicao: item.nome,
+              total_itens: 1,
+              imagem_url: imagemUrl,
+              slug: slugItem,
+            };
+
+            categorias.push(categoria);
+            console.log(`[getCategoriasEquipamentos] Card expandido: "${item.nome}" (ID: ${itemId})`);
+          }
+
+          continue;
+        }
+
         // Primeiro verificar se a tabela existe e tem dados
         const { data: sampleData, error: sampleError } = await supabase
           .from(nomeTabela)
@@ -2285,6 +2342,21 @@ export const EQUIPAMENTOS_PRODUTO_UNICO: string[] = [
   'gerador rf  surgimax plus + pedal',
   'stryker 5400-50 core console + pedal',
 ];
+
+/**
+ * Tabelas de equipamentos que devem ser expandidas na listagem principal.
+ * Cada item da tabela aparece como um card individual (como se fosse produto único).
+ * O slug gerado é: `equipamentos_medicos__<id>`
+ */
+const TABELAS_EQUIPAMENTOS_EXPANDIDOS = ['equipamentos_medicos'];
+
+/**
+ * Verifica se uma tabela é de equipamentos expandidos
+ * (cada item aparece como card individual na página principal)
+ */
+export function isEquipamentoExpandido(nomeTabela: string): boolean {
+  return TABELAS_EQUIPAMENTOS_EXPANDIDOS.includes(nomeTabela.toLowerCase().trim());
+}
 
 /**
  * Verifica se um equipamento deve ser tratado como produto único

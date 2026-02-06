@@ -31,6 +31,7 @@ interface InstrumentoDetalhesProps {
   descricaoCompleta: string;
   mostrarCodigo: boolean;
   nomeTabela?: string;
+  preloadedImages?: GalleryImage[];
 }
 
 // Tipo para as tabs
@@ -44,6 +45,7 @@ export default function InstrumentoDetalhes({
   descricaoCompleta,
   mostrarCodigo,
   nomeTabela,
+  preloadedImages,
 }: InstrumentoDetalhesProps) {
   const router = useRouter();
   const [variacaoSelecionada, setVariacaoSelecionada] = useState<Variacao | null>(
@@ -55,6 +57,13 @@ export default function InstrumentoDetalhes({
 
   // Buscar imagens do produto da tabela de imagens
   useEffect(() => {
+    // Se temos imagens pré-carregadas do servidor e não houve mudança de variação, usar diretamente
+    if (preloadedImages && preloadedImages.length > 0 && !variacaoSelecionada) {
+      setImages(preloadedImages);
+      setLoadingImages(false);
+      return;
+    }
+
     const fetchImages = async () => {
       if (!nomeTabela) {
         setLoadingImages(false);
@@ -98,7 +107,7 @@ export default function InstrumentoDetalhes({
     };
 
     fetchImages();
-  }, [instrumento.id, instrumento.imagem_url, instrumento.nome, variacaoSelecionada, nomeTabela]);
+  }, [instrumento.id, instrumento.imagem_url, instrumento.nome, variacaoSelecionada, nomeTabela, preloadedImages]);
 
   // Dados a exibir (da variação selecionada ou do instrumento original)
   const dadosExibicao = variacaoSelecionada || {

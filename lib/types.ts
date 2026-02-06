@@ -276,6 +276,7 @@ export interface CategoriaEquipamento {
  */
 export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'afastador abdominal all path – omni tract': 'Caixa de Instrumentais – Sistema de Afastamento Abdominal All Path',
+  'equipamentos_medicos': 'Equipamentos Médicos',
 };
 
 /**

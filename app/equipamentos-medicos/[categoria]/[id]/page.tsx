@@ -26,8 +26,62 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
   console.log('ID:', id);
 
   // Primeiro tenta decodificar o slug
-  const nomeTabela = slugToTabela(slug);
-  console.log('Nome tabela decodificado:', nomeTabela);
+  const nomeTabelaRaw = slugToTabela(slug);
+  console.log('Nome tabela decodificado:', nomeTabelaRaw);
+
+  // Verificar se é item de tabela expandida (formato: tabela__id)
+  const expandidoMatch = nomeTabelaRaw.match(/^(.+)__(\d+)$/);
+  if (expandidoMatch) {
+    const tabelaReal = expandidoMatch[1];
+    const itemId = parseInt(expandidoMatch[2], 10);
+    console.log(`Tabela expandida detectada: tabela="${tabelaReal}", itemId=${itemId}`);
+
+    try {
+      const { data, error } = await supabase
+        .from(tabelaReal)
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (!error && data) {
+        // Buscar imagem da tabela de imagens
+        let imagemUrl: string | null = null;
+        try {
+          const { data: imgData } = await supabase
+            .from(`${tabelaReal}_imagens`)
+            .select('url')
+            .eq('produto_id', itemId)
+            .order('ordem', { ascending: true })
+            .limit(1);
+
+          if (imgData && imgData.length > 0) {
+            imagemUrl = imgData[0].url;
+          }
+        } catch {
+          console.log('Tabela de imagens não encontrada para expandido');
+        }
+
+        return {
+          equipamento: {
+            id: itemId,
+            nome: data.nome,
+            categoria: data.categoria || 'Equipamentos Médicos',
+            codigo: data.codigo || null,
+            descricao: data.descricao || null,
+            imagem_url: imagemUrl || data.imagem_url || null,
+          },
+          nomeTabela: tabelaReal,
+          isProdutoUnico: true,
+        };
+      }
+    } catch (err) {
+      console.error('Erro ao buscar item expandido:', err);
+    }
+
+    return { equipamento: null, nomeTabela: tabelaReal, isProdutoUnico: false };
+  }
+
+  const nomeTabela = nomeTabelaRaw;
 
   // Verificar se é equipamento de produto único
   const isProdutoUnico = isEquipamentoProdutoUnico(nomeTabela);
