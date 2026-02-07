@@ -4,7 +4,8 @@
       "Bash(dir:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nProjeto inicial PenseMed - Website de locação de equipamentos médicos\n\n- Implementado Next.js 14 com App Router\n- Integração completa com Supabase\n- 3 categorias: Equipamentos Médicos, Instrumentação CME, OPME\n- Páginas dinâmicas de categorias e produtos\n- CTAs de WhatsApp integrados\n- Design responsivo com Tailwind CSS\n- TypeScript 100% tipado\n- Documentação completa\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nProjeto inicial PenseMed - Website de locação de equipamentos médicos\n\n- Implementado Next.js 14 com App Router\n- Integração completa com Supabase\n- 3 categorias: Equipamentos Médicos, Instrumentação CME, OPME\n- Páginas dinâmicas de categorias e produtos\n- CTAs de WhatsApp integrados\n- Design responsivo com Tailwind CSS\n- TypeScript 100% tipado\n- Documentação completa\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

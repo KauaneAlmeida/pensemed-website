@@ -3,7 +3,7 @@ import { Produto, getCategoriaNameBySlug, InstrumentoCME, InstrumentosCMEPaginad
 import { unstable_cache } from 'next/cache';
 import { devLog, logError, CACHE_CONFIG } from './cache';
 import { produtoDeveSerOcultoDaTabela, produtoOPMEDeveSerOculto } from './instrumentUtils';
-import { getProductImagesServer } from './productImagesServer';
+import { getProductImagesServer, corrigirUrlImagem } from './productImagesServer';
 
 // Flag para habilitar/desabilitar logs detalhados
 const ENABLE_DETAILED_LOGS = process.env.NODE_ENV === 'development';
@@ -689,7 +689,8 @@ export async function getInstrumentosDaTabela(
           const { data: imgData, error: imgError } = await getProductImagesServer(
             instr.id,
             nomeTabela,
-            instr.nome
+            instr.nome,
+            instr.imagem_slug || undefined
           );
           if (imgError) {
             console.error(`[getInstrumentosDaTabela] Erro imagem "${instr.nome}":`, imgError);
@@ -996,7 +997,8 @@ export async function getCategoriasEquipamentos(): Promise<CategoriaEquipamento[
 
             // Slug especial: equipamentos_medicos__<id>
             const slugItem = tabelaToSlug(`${nomeTabela}__${itemId}`);
-            const imagemUrl = imagensPorProduto[itemId] || item.imagem_url || null;
+            const imagemUrlRaw = imagensPorProduto[itemId] || item.imagem_url || null;
+            const imagemUrl = imagemUrlRaw ? corrigirUrlImagem(imagemUrlRaw) : null;
 
             const categoria: CategoriaEquipamento = {
               nome_tabela: nomeTabela,
@@ -1491,7 +1493,8 @@ export async function getTodosProdutosCatalogo(
             if (!itemId) continue;
 
             const slugExpandido = tabelaToSlug(`${nomeTabela}__${itemId}`);
-            const imagemUrl = imagensPorProduto[itemId] || item.imagem_url || null;
+            const imagemUrlRaw2 = imagensPorProduto[itemId] || item.imagem_url || null;
+            const imagemUrl = imagemUrlRaw2 ? corrigirUrlImagem(imagemUrlRaw2) : null;
 
             todosProdutos.push({
               id: `equip-${nomeTabela}-${itemId}`,
@@ -1976,6 +1979,7 @@ export async function getProdutosRelacionados(
   const relacionados: ProdutoRelacionado[] = [];
   const caixaSlug = tabelaToSlug(nomeTabela);
   const caixaNome = tabelaToNomeExibicao(nomeTabela);
+  const isExpandida = isEquipamentoExpandido(nomeTabela);
 
   try {
     // 1. Buscar outros produtos da MESMA CAIXA (mais relevante)
@@ -1988,6 +1992,25 @@ export async function getProdutosRelacionados(
         .order('nome', { ascending: true })
         .limit(limite + 1); // +1 para compensar se o atual estiver incluído
 
+      // Pré-carregar imagens para tabela expandida (imagem_url é null na tabela principal)
+      let imagensPorProduto: Record<number, string> = {};
+      if (isExpandida) {
+        const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+        if (tabelaImagens) {
+          const { data: imgData } = await supabase
+            .from(tabelaImagens)
+            .select('produto_id, url, ordem, principal')
+            .order('ordem', { ascending: true });
+          if (imgData) {
+            for (const img of imgData) {
+              if (!imagensPorProduto[img.produto_id] || img.principal) {
+                imagensPorProduto[img.produto_id] = img.url;
+              }
+            }
+          }
+        }
+      }
+
       if (!erroMesmaCaixa && mesmaCaixa) {
         mesmaCaixa.forEach((item: any, index: number) => {
           // Excluir o produto atual
@@ -1999,7 +2022,11 @@ export async function getProdutosRelacionados(
           // Verificar se o produto deve ser oculto
           if (produtoDeveSerOcultoDaTabela(item.nome || '', nomeTabela)) return;
 
+          // Para tabelas expandidas, buscar imagem da tabela de imagens
           let imagemUrl = item.imagem_url || item.imagem || null;
+          if (isExpandida && imagensPorProduto[itemId]) {
+            imagemUrl = corrigirUrlImagem(imagensPorProduto[itemId]);
+          }
           if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
 
           // Gerar código se não existir
@@ -2013,6 +2040,9 @@ export async function getProdutosRelacionados(
             }
           }
 
+          // Para tabelas expandidas, usar slug com __id
+          const itemCaixaSlug = isExpandida ? tabelaToSlug(`${nomeTabela}__${itemId}`) : caixaSlug;
+
           relacionados.push({
             id: itemId,
             nome: item.nome,
@@ -2020,8 +2050,8 @@ export async function getProdutosRelacionados(
             imagem_url: imagemUrl,
             categoria,
             caixa_tabela: nomeTabela,
-            caixa_nome: caixaNome,
-            caixa_slug: caixaSlug,
+            caixa_nome: isExpandida ? 'Equipamentos Médicos' : caixaNome,
+            caixa_slug: itemCaixaSlug,
           });
         });
       }

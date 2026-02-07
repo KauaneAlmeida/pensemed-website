@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento, isEquipamentoProdutoUnico } from '@/lib/api';
 import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento, tabelaToNomeExibicao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
-import { getProductImagesServer } from '@/lib/productImagesServer';
+import { getProductImagesServer, corrigirUrlImagem } from '@/lib/productImagesServer';
 import EquipamentoDetalhes from '@/components/EquipamentoDetalhes';
 import ProdutoRelacionadoCard from '@/components/ProdutoRelacionadoCard';
 
@@ -56,7 +56,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
             .limit(1);
 
           if (imgData && imgData.length > 0) {
-            imagemUrl = imgData[0].url;
+            imagemUrl = corrigirUrlImagem(imgData[0].url);
           }
         } catch {
           console.log('Tabela de imagens não encontrada para expandido');
@@ -104,7 +104,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
         .limit(1);
 
       if (imagemData && imagemData.length > 0) {
-        imagemUrl = imagemData[0].url;
+        imagemUrl = corrigirUrlImagem(imagemData[0].url);
       }
     } catch {
       // Tentar nome alternativo da tabela de imagens
@@ -116,7 +116,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
           .limit(1);
 
         if (imagemData && imagemData.length > 0) {
-          imagemUrl = imagemData[0].url;
+          imagemUrl = corrigirUrlImagem(imagemData[0].url);
         }
       } catch {
         console.log('Tabela de imagens não encontrada');
@@ -209,6 +209,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
         console.log('ENCONTRADO na tabela:', tabela);
         let imagemUrl = data.imagem_url || data.imagem || null;
         if (imagemUrl === 'NULL' || imagemUrl === 'null') imagemUrl = null;
+        if (imagemUrl) imagemUrl = corrigirUrlImagem(imagemUrl);
 
         return {
           equipamento: {

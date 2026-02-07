@@ -31,14 +31,7 @@ const TABELAS_COM_BUSCA_SIMILARIDADE = [
 /**
  * Slugs a serem ignorados por tabela
  */
-const SLUGS_IGNORAR: Record<string, string[]> = {
-  'caixa_de_apoio_lombar_imagens': [
-    'cureta-caspar-ponta-quadrada',
-    'lamina-afastador-caspar',
-    'ponta-aspirador-cushing',
-    'ponta-aspirador-frazier',
-  ],
-};
+const SLUGS_IGNORAR: Record<string, string[]> = {};
 
 /**
  * Tabelas com estrutura especial
@@ -54,6 +47,35 @@ const TABELAS_ESTRUTURA_ESPECIAL: Record<string, {
     usarSlug: true,
   },
 };
+
+/**
+ * Corrige URLs de imagens com caminhos incorretos no Storage
+ * - caixa-apoio-lombar → caixa-de-apoio-lombar
+ * - telepack sem subpasta equipamentos-medicos
+ * - Re-encoda espaços no path (%20)
+ */
+export function corrigirUrlImagem(url: string): string {
+  if (!url) return url;
+  let fixed = url;
+  // Corrigir caminho sem "de"
+  fixed = fixed.replace('/caixa-apoio-lombar/', '/caixa-de-apoio-lombar/');
+  // Corrigir equipamentos fora da subpasta equipamentos-medicos
+  fixed = fixed.replace('/instrumentos/telepack-video-endoscopio-karl-storz/', '/instrumentos/equipamentos-medicos/telepack-video-endoscopio-karl-storz/');
+  fixed = fixed.replace('/instrumentos/bomba-infusao-stryker-arthropump/', '/instrumentos/equipamentos-medicos/bomba-infusao-stryker-arthropump/');
+  fixed = fixed.replace('/instrumentos/fonte-luz-stryker-l9000/', '/instrumentos/equipamentos-medicos/fonte-luz-stryker-l9000/');
+  // Corrigir typo no nome da pasta (clloward → cloward)
+  fixed = fixed.replace('/pinca-clloward-', '/pinca-cloward-');
+  // Corrigir extensão errada (afastador-taylor .png → .jpg)
+  fixed = fixed.replace('/afastador-taylor/01.png', '/afastador-taylor/01.jpg');
+  // Re-encodar espaços no path da URL (alguns registros têm %20 por espaços em nomes de pasta)
+  const publicIdx = fixed.indexOf('/public/');
+  if (publicIdx !== -1) {
+    const base = fixed.substring(0, publicIdx + 8);
+    const path = fixed.substring(publicIdx + 8);
+    fixed = base + path.split('/').map(s => encodeURIComponent(decodeURIComponent(s))).join('/');
+  }
+  return fixed;
+}
 
 const REDIRECIONAR_IMAGEM_PRODUTO: Record<number, number> = {
   15003: 15002,
@@ -154,7 +176,8 @@ export function getImageTableName(tableName: string, productId?: number): string
 export async function getProductImagesServer(
   productId: number,
   tableName: string,
-  productName?: string
+  productName?: string,
+  imagemSlug?: string
 ): Promise<{ data: ProductImageServer[] | null; error: string | null }> {
   try {
     const productIdParaBusca = REDIRECIONAR_IMAGEM_PRODUTO[productId] || productId;
@@ -162,6 +185,45 @@ export async function getProductImagesServer(
     const estruturaEspecial = TABELAS_ESTRUTURA_ESPECIAL[imageTableName];
     const usaProdutoNome = TABELAS_COM_PRODUTO_NOME.includes(imageTableName);
     const usaBuscaSimilaridade = TABELAS_COM_BUSCA_SIMILARIDADE.includes(imageTableName);
+
+    // Busca direta por imagem_slug quando disponível (mais confiável que geração de slug)
+    if (estruturaEspecial && imagemSlug) {
+      const resultSlug = await supabase
+        .from(imageTableName)
+        .select('*')
+        .eq(estruturaEspecial.campoBusca, imagemSlug)
+        .order('ordem', { ascending: true });
+
+      if (!resultSlug.error && resultSlug.data && resultSlug.data.length > 0) {
+        // Filtrar registros com URLs genéricas/erradas (URL não contém o slug do produto no path)
+        const dadosValidos = resultSlug.data.filter((item: any) => {
+          const rawUrl = item[estruturaEspecial.campoUrl] || item.url_imagem || item.url || '';
+          const slug = item.produto_slug || imagemSlug || '';
+          if (slug && rawUrl) {
+            const urlParts = rawUrl.split('/');
+            const produtoFolder = urlParts[urlParts.length - 2];
+            const partesPrincipais = slug.split('-').filter((p: string) => p.length > 3);
+            if (partesPrincipais.length >= 2 && produtoFolder) {
+              const folderLower = produtoFolder.toLowerCase();
+              const matchCount = partesPrincipais.filter((p: string) => folderLower.includes(p)).length;
+              if (matchCount < partesPrincipais.length / 2) return false;
+            }
+          }
+          return true;
+        });
+        const dadosFinais = dadosValidos.length > 0 ? dadosValidos : resultSlug.data;
+        return {
+          data: dadosFinais.map((item: any, index: number) => ({
+            id: item.id || `${index}`,
+            url: corrigirUrlImagem(item[estruturaEspecial.campoUrl] || item.url_imagem || item.url),
+            ordem: item.ordem || index,
+            principal: item.ordem === 1 || index === 0,
+            produto_nome: item.produto_slug || productName,
+          })),
+          error: null,
+        };
+      }
+    }
 
     // Tratamento para tabelas com estrutura especial
     if (estruturaEspecial && productName) {
@@ -260,12 +322,33 @@ export async function getProductImagesServer(
       const slugsIgnorar = SLUGS_IGNORAR[imageTableName] || [];
       const dadosFiltrados = (data || []).filter((item: any) => {
         const slug = item.produto_slug || '';
+        if (slugsIgnorar.includes(slug)) return false;
+        // Filtrar registros com URLs genéricas/erradas (URL não contém o slug do produto no path)
+        const rawUrl = item[estruturaEspecial.campoUrl] || item.url_imagem || item.url || '';
+        if (slug && rawUrl) {
+          // Extrair o caminho do produto na URL (parte entre a pasta da tabela e o arquivo)
+          const urlParts = rawUrl.split('/');
+          const produtoFolder = urlParts[urlParts.length - 2]; // ex: lamina-afastador-cloward-lombar
+          // Se a pasta do produto na URL não contém partes significativas do slug, é URL genérica
+          const partesPrincipais = slug.split('-').filter((p: string) => p.length > 3);
+          if (partesPrincipais.length >= 2 && produtoFolder) {
+            const folderLower = produtoFolder.toLowerCase();
+            const matchCount = partesPrincipais.filter((p: string) => folderLower.includes(p)).length;
+            // Requer pelo menos metade das partes significativas
+            if (matchCount < partesPrincipais.length / 2) return false;
+          }
+        }
+        return true;
+      });
+      // Se todos foram filtrados, usar dados originais como fallback
+      const dadosFinaisFiltrados = dadosFiltrados.length > 0 ? dadosFiltrados : (data || []).filter((item: any) => {
+        const slug = item.produto_slug || '';
         return !slugsIgnorar.includes(slug);
       });
 
-      const imagensNormalizadas: ProductImageServer[] = dadosFiltrados.map((item: any, index: number) => ({
+      const imagensNormalizadas: ProductImageServer[] = dadosFinaisFiltrados.map((item: any, index: number) => ({
         id: item.id || `${index}`,
-        url: item[estruturaEspecial.campoUrl] || item.url_imagem || item.url,
+        url: corrigirUrlImagem(item[estruturaEspecial.campoUrl] || item.url_imagem || item.url),
         ordem: item.ordem || index,
         principal: item.ordem === 1 || index === 0,
         produto_nome: item.produto_slug || productName,
@@ -331,7 +414,7 @@ export async function getProductImagesServer(
       }
 
       if (melhorMatch) {
-        return { data: melhorMatch.imagens, error: null };
+        return { data: melhorMatch.imagens.map((img: any) => ({ ...img, url: corrigirUrlImagem(img.url) })), error: null };
       }
 
       return { data: [], error: null };
@@ -358,7 +441,7 @@ export async function getProductImagesServer(
       if (urlsVistas.has(url)) return false;
       urlsVistas.add(url);
       return true;
-    });
+    }).map((img: any) => ({ ...img, url: corrigirUrlImagem(img.url) }));
 
     return { data: dadosSemDuplicatas, error: null };
   } catch (err) {

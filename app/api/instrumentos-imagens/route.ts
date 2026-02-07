@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { getImageTableName } from '@/lib/productImagesServer';
+import { getImageTableName, corrigirUrlImagem } from '@/lib/productImagesServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ imagens: [] });
     }
 
-    return NextResponse.json({ imagens: data || [] });
+    // Corrigir URLs com caminhos incorretos no Storage
+    const imagens = (data || []).map((img: Record<string, unknown>) => {
+      const result = { ...img };
+      if (result.url_imagem) result.url_imagem = corrigirUrlImagem(result.url_imagem as string);
+      if (result.url) result.url = corrigirUrlImagem(result.url as string);
+      return result;
+    });
+
+    return NextResponse.json({ imagens });
   } catch (err) {
     console.error('[API /instrumentos-imagens] Erro inesperado:', err);
     return NextResponse.json({ imagens: [] }, { status: 500 });
