@@ -9,4 +9,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (url, options = {}) => {
+      return fetch(url, { ...options, cache: 'no-store' });
+    },
+  },
+});
