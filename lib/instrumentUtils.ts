@@ -30,14 +30,8 @@ const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
     'pinça goivabeyer articulada curva 18cm4,0mm',
     // Ocultos por outros motivos
     'pinça kerrinson reta p/cima 23cm 2mm',
-    'pinça love p/cima 20cm ponta 4x10',
   ],
   'caixa de apoio alif': [
-    // Sem imagem
-    'afastador langenbeck 210mm 25 x 110mm',
-    'afastador langenbeck 210mm 25 x 130mm',
-    'afastador langenbeck 210mm 25 x 180mm',
-    'descolador baioneta p/ cima 32cm x 4mm',
     // Ocultos por outros motivos
     'cabo dilatadores llif',
     'cinzel smith petersen',
@@ -454,6 +448,16 @@ const AGRUPAMENTOS_POR_TABELA: Record<string, AgrupamentoEspecial[]> = {
     },
   ],
   'caixa de apoio lombar': [
+    {
+      // PINÇA LOVE P/CIMA 20CM PONTA 2X10MMR / 3X10R / 4X10 -> agrupa por ponta
+      padrao: /pin[cç]a\s+love\s+p\/?\s*cima\s+20\s*cm\s+ponta/i,
+      extrairGrupo: () => 'Ponta',
+      extrairVariacao: (nome: string) => {
+        const match = nome.match(/ponta\s+(.+)$/i);
+        return match ? match[1].trim() : null;
+      },
+      nomeBase: 'Pinça Love P/Cima 20cm',
+    },
     {
       // CURETA BUSHE 26,5 CM ANG FIG 00 -> agrupa todas as Curetas Bushe
       padrao: /cureta\s+bushe/i,

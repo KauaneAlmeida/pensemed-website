@@ -47,7 +47,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center">
             <Image
               src="/images/Logo.png"
-              alt="PenseMed - Tecnologia Médica"
+              alt="PenseMed - Tecnologia Hospitalar"
               width={220}
               height={220}
               priority

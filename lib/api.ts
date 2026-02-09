@@ -369,6 +369,21 @@ async function contarItensUnicos(nomeTabela: string): Promise<number> {
  * @param nomeTabela - Nome da tabela de produtos
  * @returns URL da segunda imagem ou null
  */
+// Produto preferido para imagem do card principal (produto_id cujo imagem deve representar a caixa)
+const PRODUTO_ID_CARD_PRINCIPAL: Record<string, number> = {
+  'caixa intrumentacao cirurgica cranio': 1, // Caixa de Apoio para Crânio
+};
+
+// Produto preferido por nome (para tabelas que usam produto_nome em vez de produto_id)
+const PRODUTO_NOME_CARD_PRINCIPAL: Record<string, string> = {
+  'caixa de apoio alif': 'AFASTADOR DOYEN',
+};
+
+// Renomear produtos no frontend (sem alterar o Supabase)
+const RENOMEAR_PRODUTO: Record<string, string> = {
+  'AFASTADOR DOYEN 45 X 120MM': 'CAIXA DE APOIO ALIF',
+};
+
 async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
   try {
     // Verificar se existe tabela de imagens mapeada
@@ -449,6 +464,36 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
 
       console.log(`[buscarImagemDaCaixa] Nenhuma imagem válida em "${tabelaImagens}" (estrutura especial)`);
       return null;
+    }
+
+    // Estratégia 0: Buscar imagem do produto preferido para o card
+    const produtoIdPreferido = PRODUTO_ID_CARD_PRINCIPAL[nomeTabela];
+    if (produtoIdPreferido) {
+      const { data: imgPreferida } = await supabase
+        .from(tabelaImagens)
+        .select('url')
+        .eq('produto_id', produtoIdPreferido)
+        .order('ordem', { ascending: true })
+        .limit(1);
+      if (imgPreferida && imgPreferida.length > 0 && imgPreferida[0]?.url) {
+        console.log(`[buscarImagemDaCaixa] Usando imagem do produto preferido (id=${produtoIdPreferido}): ${imgPreferida[0].url}`);
+        return imgPreferida[0].url;
+      }
+    }
+
+    // Estratégia 0b: Buscar por produto_nome preferido (tabelas que usam produto_nome)
+    const produtoNomePreferido = PRODUTO_NOME_CARD_PRINCIPAL[nomeTabela];
+    if (produtoNomePreferido) {
+      const { data: imgNome } = await supabase
+        .from(tabelaImagens)
+        .select('url')
+        .ilike('produto_nome', `${produtoNomePreferido}%`)
+        .order('ordem', { ascending: true })
+        .limit(1);
+      if (imgNome && imgNome.length > 0 && imgNome[0]?.url) {
+        console.log(`[buscarImagemDaCaixa] Usando imagem do produto preferido (nome="${produtoNomePreferido}"): ${imgNome[0].url}`);
+        return imgNome[0].url;
+      }
     }
 
     // Estratégia 1: Buscar imagem marcada como principal
@@ -646,6 +691,8 @@ export async function getInstrumentosDaTabela(
       return {
         ...item,
         id,
+        nome: RENOMEAR_PRODUTO[item.nome] || item.nome,
+        nome_original: item.nome,
         codigo,
         imagem_url: imagemUrl,
       };
@@ -689,7 +736,7 @@ export async function getInstrumentosDaTabela(
           const { data: imgData, error: imgError } = await getProductImagesServer(
             instr.id,
             nomeTabela,
-            instr.nome,
+            instr.nome_original || instr.nome,
             instr.imagem_slug || undefined
           );
           if (imgError) {
@@ -893,6 +940,8 @@ export async function getInstrumentoDaTabela(
     return {
       ...data,
       id: idUsado || data.id || 1,
+      nome: RENOMEAR_PRODUTO[data.nome] || data.nome,
+      nome_original: data.nome,
       codigo: codigoFinal,
       imagem_url: imagemUrl,
     };
@@ -1417,10 +1466,12 @@ export async function getTodosProdutosCatalogo(
             temImagemNaTabela = produtosComImagem.has(produtoId);
           }
 
+          const nomeExibicao = RENOMEAR_PRODUTO[item.nome] || item.nome;
+
           todosProdutos.push({
             // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
             id: `cme-${nomeTabela}-${produtoId}`,
-            nome: item.nome,
+            nome: nomeExibicao,
             codigo,
             descricao: item.descricao || null,
             imagem_url: imagemUrl,
@@ -2045,7 +2096,7 @@ export async function getProdutosRelacionados(
 
           relacionados.push({
             id: itemId,
-            nome: item.nome,
+            nome: RENOMEAR_PRODUTO[item.nome] || item.nome,
             codigo,
             imagem_url: imagemUrl,
             categoria,
@@ -2105,7 +2156,7 @@ export async function getProdutosRelacionados(
             // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para consistência
             relacionados.push({
               id: item.id ?? (index + 1),
-              nome: item.nome,
+              nome: RENOMEAR_PRODUTO[item.nome] || item.nome,
               codigo,
               imagem_url: imagemUrl,
               categoria,

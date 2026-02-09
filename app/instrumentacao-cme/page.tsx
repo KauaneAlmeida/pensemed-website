@@ -54,14 +54,14 @@ function CaixaCard({ caixa }: { caixa: CaixaCME }) {
       href={`/instrumentacao-cme/${caixa.slug}`}
       className="group bg-white overflow-hidden border border-gray-100 hover:border-[#205b67]/30 hover:shadow-lg transition-all duration-300 block"
     >
-      {/* Imagem - sem bordas, cobrindo todo o espaço */}
+      {/* Imagem */}
       <div className="aspect-square relative overflow-hidden bg-gray-50">
         {caixa.imagem_url ? (
           <Image
             src={caixa.imagem_url}
             alt={caixa.nome_exibicao}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="flex items-center justify-center h-full">

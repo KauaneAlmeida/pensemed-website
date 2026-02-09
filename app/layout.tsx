@@ -19,9 +19,9 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'PenseMed - Tecnologia Médica de Alta Complexidade',
+  title: 'PenseMed - Tecnologia Hospitalar de Alta Complexidade',
   description:
-    'PenseMed - Tecnologia Médica de Alta Complexidade. Equipamentos de ponta para procedimentos cirúrgicos, geradores de RF, sistemas de artroscopia e mais.',
+    'PenseMed - Tecnologia Hospitalar de Alta Complexidade. Equipamentos de ponta para procedimentos cirúrgicos, geradores de RF, sistemas de artroscopia e mais.',
   keywords: [
     'equipamentos médicos',
     'tecnologia médica',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     'neuroestimuladores',
   ],
   openGraph: {
-    title: 'PenseMed - Tecnologia Médica que Transforma Vidas',
+    title: 'PenseMed - Tecnologia Hospitalar que Transforma Vidas',
     description: 'Equipamentos médicos de alta complexidade para centros cirúrgicos. Geradores de RF, sistemas de artroscopia, lasers médicos e neuroestimuladores.',
     type: 'website',
     locale: 'pt_BR',

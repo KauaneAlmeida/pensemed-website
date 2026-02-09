@@ -129,6 +129,7 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
           instrumento: {
             id: idUsado || data.id || parseInt(codigo, 10),
             nome: data.nome,
+            nome_original: data.nome,
             codigo: data.codigo || null,
             descricao: data.descricao || null,
             imagem_url: imagemUrl,
@@ -240,7 +241,7 @@ export default async function InstrumentoDetailPage({
   let preloadedImages: GalleryImage[] = [];
   try {
     const productId = instrumento.id || 0;
-    const { data: imgData } = await getProductImagesServer(productId, nomeTabela, instrumento.nome);
+    const { data: imgData } = await getProductImagesServer(productId, nomeTabela, instrumento.nome_original || instrumento.nome);
     if (imgData && imgData.length > 0) {
       preloadedImages = imgData.map((img: any) => ({
         id: img.id,

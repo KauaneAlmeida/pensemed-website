@@ -77,6 +77,7 @@ export const getCategoriaNameBySlug = (slug: string): string => {
 export interface InstrumentoCME {
   id: number;
   nome: string;              // Nome do instrumento (ex: "Afastador Translucent Longitudinal")
+  nome_original?: string;    // Nome original no Supabase (antes de RENOMEAR_PRODUTO)
   categoria: string;         // Nome da caixa/categoria (ex: "Caixa Cervical Translucente")
   codigo: string;            // Código do produto (ex: "TRS400")
   descricao?: string | null; // Descrição completa

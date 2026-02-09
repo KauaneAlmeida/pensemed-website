@@ -18,7 +18,7 @@ export default function LoadingScreen({
         <div className="mb-8">
           <Image
             src="/images/Logo.png"
-            alt="PenseMed - Tecnologia Médica"
+            alt="PenseMed - Tecnologia Hospitalar"
             width={400}
             height={400}
             priority

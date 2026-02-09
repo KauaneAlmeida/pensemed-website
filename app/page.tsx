@@ -113,7 +113,7 @@ export default function HomePage() {
             {/* Título principal */}
             <h1 className="font-semibold sm:font-medium mb-8 leading-[1.05] tracking-[-0.03em] animate-fade-in-up">
               <span className="block text-white/95 text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl">
-                Tecnologia Médica que
+                Tecnologia Hospitalar que
               </span>
               <span className="block text-[#4fd1c5] text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl mt-1 sm:mt-2">
                 Transforma Vidas

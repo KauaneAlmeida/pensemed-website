@@ -17,7 +17,7 @@ export default function Footer() {
   <Link href="/" className="block">
     <Image
       src="/images/Logo.png"
-      alt="PenseMed - Tecnologia Médica"
+      alt="PenseMed - Tecnologia Hospitalar"
       width={220}
       height={220}
       priority
