@@ -26,7 +26,6 @@ const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
   'caixa de apoio lombar': [
     // Sem imagem
     'afastador abdominal all path',
-    'pinça goiva luer-stiller biarticulada curva 24cm',
     'pinça goivabeyer articulada curva 18cm4,0mm',
     // Ocultos por outros motivos
     'pinça kerrinson reta p/cima 23cm 2mm',
