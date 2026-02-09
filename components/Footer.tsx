@@ -26,7 +26,7 @@ className="w-[160px] sm:w-[180px] md:w-[220px] h-auto brightness-0 invert -mt-9 
   </Link>
 
 <p className="-mt-14 sm:-mt-16 md:-mt-18 text-gray-400 text-sm leading-relaxed max-w-[280px]">
-    Equipamentos médicos de alta precisão para centros cirúrgicos e hospitais.
+    Equipamentos hospitalares de alta precisão para centros cirúrgicos e hospitais.
   </p>
 
 </div>
