@@ -67,6 +67,9 @@ export function corrigirUrlImagem(url: string): string {
   fixed = fixed.replace('/instrumentos/microscopio-cirurgico-zeiss-opmi-pico/', '/instrumentos/equipamentos-medicos/microscopio-cirurgico-zeiss-opmi-pico/');
   fixed = fixed.replace('/instrumentos/motor-cirurgico-nks-surgic-pro-led/', '/instrumentos/equipamentos-medicos/motor-cirurgico-nks-surgic-pro-led/');
   fixed = fixed.replace('/instrumentos/afastador-tubular-vertebral-crystal-lux-safira/', '/instrumentos/equipamentos-medicos/afastador-tubular-vertebral-crystal-lux-safira/');
+  fixed = fixed.replace('/instrumentos/console-shaver-stryker-crossfire-2/', '/instrumentos/equipamentos-medicos/console-shaver-stryker-crossfire-2/');
+  fixed = fixed.replace('/instrumentos/sistema-perfuracao-cirurgica-nks-primado-2/', '/instrumentos/equipamentos-medicos/sistema-perfuracao-cirurgica-nks-primado-2/');
+  fixed = fixed.replace('/instrumentos/motor-piezoeletrico-ultrassonico-cirurgico/', '/instrumentos/equipamentos-medicos/motor-piezoeletrico-ultrassonico-cirurgico/');
   // Corrigir typo no nome da pasta (clloward → cloward)
   fixed = fixed.replace('/pinca-clloward-', '/pinca-cloward-');
   // Corrigir extensão errada (afastador-taylor .png → .jpg)
