@@ -1347,6 +1347,7 @@ export interface ProdutoCatalogo {
   caixa_tabela: string;
   caixa_nome: string;
   caixa_slug: string;
+  nome_original?: string;
 }
 
 /**
@@ -1469,11 +1470,13 @@ export async function getTodosProdutosCatalogo(
           }
 
           const nomeExibicao = RENOMEAR_PRODUTO[item.nome] || item.nome;
+          const nomeOriginal = RENOMEAR_PRODUTO[item.nome] ? item.nome : undefined;
 
           todosProdutos.push({
             // IMPORTANTE: Se item.id não existe, usar index + 1 (1-based) para compatibilidade com busca
             id: `cme-${nomeTabela}-${produtoId}`,
             nome: nomeExibicao,
+            nome_original: nomeOriginal,
             codigo,
             descricao: item.descricao || null,
             imagem_url: imagemUrl,
@@ -1949,7 +1952,7 @@ export async function getTodosProdutosCatalogo(
         }
 
         // Para CME e Equipamentos, usar getProductImagesServer
-        const { data: imgData, error: imgError } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome);
+        const { data: imgData, error: imgError } = await getProductImagesServer(prodId, produto.caixa_tabela, produto.nome_original || produto.nome);
         if (imgError) {
           console.error(`[getTodosProdutosCatalogo] Erro imagem "${produto.nome}" (tabela: ${produto.caixa_tabela}):`, imgError);
           imgFalharam++;
