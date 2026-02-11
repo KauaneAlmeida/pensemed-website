@@ -223,7 +223,7 @@ export default async function InstrumentoDetailPage({
       try {
         const prodId = typeof relacionado.id === 'string' ? parseInt(relacionado.id, 10) : relacionado.id;
         if (!isNaN(prodId)) {
-          const { data: imgData } = await getProductImagesServer(prodId, relacionado.caixa_tabela, relacionado.nome);
+          const { data: imgData } = await getProductImagesServer(prodId, relacionado.caixa_tabela, relacionado.nome_original || relacionado.nome);
           if (imgData && imgData.length > 0) {
             const principal = imgData.find(img => img.principal) || imgData[0];
             if (principal?.url) {

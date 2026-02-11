@@ -246,7 +246,7 @@ const TABELAS_CME = [
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
-  // 'caixa endoscopia coluna', // Oculto temporariamente
+  'caixa endoscopia coluna',
   // 'caixa baioneta mis', // Oculto temporariamente
   'caixa intrumentacao cirurgica cranio',
   'caixa micro tesouras',
@@ -336,12 +336,14 @@ async function contarItensUnicos(nomeTabela: string): Promise<number> {
 
     console.log(`[contarItensUnicos] Tabela "${nomeTabela}" tem ${data.length} registros brutos`);
 
-    // Normalizar e contar únicos baseado no campo 'nome'
+    // Normalizar e contar únicos baseado no campo 'nome' (excluindo ocultos)
     const nomesUnicos = new Set<string>();
     data.forEach((item: any) => {
       // Tentar pegar o nome de diferentes campos possíveis
       const nome = item.nome || item.name || item.titulo || item.title;
       if (nome) {
+        // Excluir produtos ocultos da contagem
+        if (produtoDeveSerOcultoDaTabela(nome, nomeTabela)) return;
         const nomeNormalizado = nome
           .toLowerCase()
           .trim()
@@ -2007,6 +2009,7 @@ export { TABELAS_CME, TABELAS_EQUIPAMENTOS };
 export interface ProdutoRelacionado {
   id: string | number;
   nome: string;
+  nome_original?: string;
   codigo: string | null;
   imagem_url: string | null;
   categoria: 'Instrumentação Cirúrgica CME' | 'Equipamentos Médicos';
@@ -2097,6 +2100,7 @@ export async function getProdutosRelacionados(
           relacionados.push({
             id: itemId,
             nome: RENOMEAR_PRODUTO[item.nome] || item.nome,
+            nome_original: item.nome,
             codigo,
             imagem_url: imagemUrl,
             categoria,
@@ -2157,6 +2161,7 @@ export async function getProdutosRelacionados(
             relacionados.push({
               id: item.id ?? (index + 1),
               nome: RENOMEAR_PRODUTO[item.nome] || item.nome,
+              nome_original: item.nome,
               codigo,
               imagem_url: imagemUrl,
               categoria,
