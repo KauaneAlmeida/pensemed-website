@@ -242,7 +242,7 @@ export async function getProdutosByCategoriaSlug(slugCategoria: string): Promise
  * IMPORTANTE: Use o nome EXATO da tabela como está no Supabase (com espaços)
  */
 const TABELAS_CME = [
-  // 'caixa cervical translucente', // Oculto temporariamente
+  'caixa cervical translucente',
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
@@ -257,6 +257,10 @@ const TABELAS_CME = [
   'instrumental peça de mão stryker formula',
   'instrumental de descompressão TOM SHIELD',
   'instrumental cabo de fibra óptica compatível stryker',
+  'caixa_razek_interlaminar_transforaminal',
+  'caixa_endoline_interlaminar',
+  'caixa_instrucao_biportal_ube',
+  'craniotomo_drill_eletrico',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -280,6 +284,10 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'instrumental peça de mão stryker formula': 'instrumental_peca_de_mao_stryker_formula_imagens',
   'instrumental de descompressão TOM SHIELD': 'instrumental_de_descompressao_tom_shield_imagens',
   'instrumental cabo de fibra óptica compatível stryker': 'instrumental_cabo_de_fibra_optica_compativel_stryker_imagens',
+  'caixa_razek_interlaminar_transforaminal': 'caixa_razek_interlaminar_transforaminal_imagens',
+  'caixa_endoline_interlaminar': 'caixa_endoline_interlaminar_imagens',
+  'caixa_instrucao_biportal_ube': 'caixa_instrucao_biportal_ube_imagens',
+  'craniotomo_drill_eletrico': 'craniotomo_drill_eletrico_imagens',
   // Equipamentos médicos (nomes EXATOS das tabelas no Supabase)
   'arthrocare quantum 2 rf + pedal': 'arthrocare_quantum_2_rf_pedal_imagens',
   'b. braun stimuplex hns12': 'b_braun_stimuplex_hns12_imagens',
@@ -299,6 +307,9 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
 const TABELAS_COM_PRODUTO_NOME = [
   'caixa_de_apoio_alif_imagens',
   'caixa_de_apoio_cervical_imagens',
+  'caixa_razek_interlaminar_transforaminal_imagens',
+  'caixa_endoline_interlaminar_imagens',
+  'caixa_instrucao_biportal_ube_imagens',
 ];
 
 /**
@@ -374,6 +385,7 @@ async function contarItensUnicos(nomeTabela: string): Promise<number> {
 // Produto preferido para imagem do card principal (produto_id cujo imagem deve representar a caixa)
 const PRODUTO_ID_CARD_PRINCIPAL: Record<string, number> = {
   'caixa intrumentacao cirurgica cranio': 1, // Caixa de Apoio para Crânio
+  'caixa cervical translucente': 58, // Acomodação Kit Translucent
 };
 
 // Produto preferido por nome (para tabelas que usam produto_nome em vez de produto_id)

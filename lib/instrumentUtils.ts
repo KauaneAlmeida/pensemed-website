@@ -76,7 +76,8 @@ const PRODUTOS_OCULTOS_POR_TABELA: Record<string, string[]> = {
     'ass309 - cureta baioneta angulada mis starlet system n°0',
   ],
   'caixa cervical translucente': [
-    // Sem imagem - todos exceto 2
+    // Sem imagem
+    'afastador translucent longitudinal',
     'afastador transversal direito',
     'afastador transversal esquerdo',
     'afastador vertebral direito',

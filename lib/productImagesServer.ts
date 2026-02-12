@@ -19,6 +19,9 @@ export interface ProductImageServer {
  */
 const TABELAS_COM_PRODUTO_NOME = [
   'caixa_de_apoio_cervical_imagens',
+  'caixa_razek_interlaminar_transforaminal_imagens',
+  'caixa_endoline_interlaminar_imagens',
+  'caixa_instrucao_biportal_ube_imagens',
 ];
 
 /**
@@ -148,6 +151,10 @@ export function getImageTableName(tableName: string, productId?: number): string
     'caixa de apoio alif': 'caixa_de_apoio_alif_imagens',
     'caixa de apoio cervical': 'caixa_de_apoio_cervical_imagens',
     'caixa de apoio lombar': 'caixa_de_apoio_lombar_imagens',
+    'caixa_razek_interlaminar_transforaminal': 'caixa_razek_interlaminar_transforaminal_imagens',
+    'caixa_endoline_interlaminar': 'caixa_endoline_interlaminar_imagens',
+    'caixa_instrucao_biportal_ube': 'caixa_instrucao_biportal_ube_imagens',
+    'craniotomo_drill_eletrico': 'craniotomo_drill_eletrico_imagens',
     'arthrocare quantum 2 rf + pedal': 'arthrocare_quantum_2_rf_pedal_imagens',
     'b. braun stimuplex hns12': 'b_braun_stimuplex_hns12_imagens',
     'bomba de artroscopia flosteady 150': 'bomba_de_artroscopia_flosteady_imagens',
