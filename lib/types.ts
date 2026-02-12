@@ -279,6 +279,19 @@ export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'afastador abdominal all path – omni tract': 'Caixa de Instrumentais – Sistema de Afastamento Abdominal All Path',
   'equipamentos_medicos': 'Equipamentos Médicos',
   'caixa de apoio alif': 'Caixa De Apoio ALIF',
+  'caixa_razek_interlaminar_transforaminal': 'Caixa Razek Interlaminar e Transforaminal',
+  'caixa_endoline_interlaminar': 'Caixa Endoline Interlaminar',
+  'caixa_instrucao_biportal_ube': 'Caixa de Instrumentação Biportal UBE',
+  'craniotomo_drill_eletrico': 'Craniótomo / Drill Elétrico',
+  'caixa intrumentacao cirurgica cranio': 'Caixa de Instrumentação Cirúrgica Crânio',
+  'caixa cervical translucente': 'Caixa Cervical Translucente',
+  'caixa endoscopia coluna': 'Caixa Endoscopia Coluna',
+  'caixa micro tesouras': 'Caixa Micro Tesouras',
+  'caixa microdissectores rhoton': 'Caixa Microdissectores Rhoton',
+  'instrumental peça de mão stryker formula': 'Instrumental Peça de Mão Stryker Formula',
+  'instrumental de descompressão TOM SHIELD': 'Instrumental de Descompressão TOM SHIELD',
+  'instrumental cabo de fibra óptica compatível stryker': 'Instrumental Cabo de Fibra Óptica Compatível Stryker',
+  'caixa apoio bucomaxilo': 'Caixa Apoio Bucomaxilo',
 };
 
 /**

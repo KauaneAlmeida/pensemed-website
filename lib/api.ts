@@ -491,7 +491,7 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
         .limit(1);
       if (imgPreferida && imgPreferida.length > 0 && imgPreferida[0]?.url) {
         console.log(`[buscarImagemDaCaixa] Usando imagem do produto preferido (id=${produtoIdPreferido}): ${imgPreferida[0].url}`);
-        return imgPreferida[0].url;
+        return corrigirUrlImagem(imgPreferida[0].url);
       }
     }
 
@@ -506,7 +506,7 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
         .limit(1);
       if (imgNome && imgNome.length > 0 && imgNome[0]?.url) {
         console.log(`[buscarImagemDaCaixa] Usando imagem do produto preferido (nome="${produtoNomePreferido}"): ${imgNome[0].url}`);
-        return imgNome[0].url;
+        return corrigirUrlImagem(imgNome[0].url);
       }
     }
 
@@ -520,7 +520,7 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
 
     if (!erroPrincipal && imagemPrincipal && imagemPrincipal.length > 0 && imagemPrincipal[0]?.url) {
       console.log(`[buscarImagemDaCaixa] Usando imagem principal: ${imagemPrincipal[0].url}`);
-      return imagemPrincipal[0].url;
+      return corrigirUrlImagem(imagemPrincipal[0].url);
     }
 
     // Estratégia 2: Buscar primeira imagem ordenada por ordem
@@ -532,7 +532,7 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
 
     if (!erroPrimeira && primeiraImagem && primeiraImagem.length > 0 && primeiraImagem[0]?.url) {
       console.log(`[buscarImagemDaCaixa] Usando primeira imagem por ordem: ${primeiraImagem[0].url}`);
-      return primeiraImagem[0].url;
+      return corrigirUrlImagem(primeiraImagem[0].url);
     }
 
     // Estratégia 3 (fallback): Buscar qualquer imagem
@@ -553,7 +553,7 @@ async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
 
     if (imagens[0]?.url) {
       console.log(`[buscarImagemDaCaixa] URL selecionada: ${imagens[0].url}`);
-      return imagens[0].url;
+      return corrigirUrlImagem(imagens[0].url);
     }
 
     console.log(`[buscarImagemDaCaixa] Nenhuma imagem válida em "${tabelaImagens}"`);

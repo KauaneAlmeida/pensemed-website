@@ -73,6 +73,12 @@ export function corrigirUrlImagem(url: string): string {
   fixed = fixed.replace('/instrumentos/console-shaver-stryker-crossfire-2/', '/instrumentos/equipamentos-medicos/console-shaver-stryker-crossfire-2/');
   fixed = fixed.replace('/instrumentos/sistema-perfuracao-cirurgica-nks-primado-2/', '/instrumentos/equipamentos-medicos/sistema-perfuracao-cirurgica-nks-primado-2/');
   fixed = fixed.replace('/instrumentos/motor-piezoeletrico-ultrassonico-cirurgico/', '/instrumentos/equipamentos-medicos/motor-piezoeletrico-ultrassonico-cirurgico/');
+  // Corrigir URLs sem subpasta (imagens estão em subpastas no Storage)
+  fixed = fixed.replace('/caixa-razek-interlaminar-transforaminal/01.jpg', '/caixa-razek-interlaminar-transforaminal/caixa-razek-interlaminar-transforaminal/01.jpg');
+  fixed = fixed.replace('/pincas-endoline-interlaminar-endoscopio/01.jpg', '/caixa-endoline-interlaminar/pincas-endoline-interlaminar-endoscopio/01.jpg');
+  fixed = fixed.replace('/caixa-instrucao-biportal-ube/01.jpg', '/caixa-instrucao-biportal-ube/caixa-instrucao-biportal-ube/01.jpg');
+  fixed = fixed.replace('/endoscopios-unilateral-biportal-storz-ube/01.jpg', '/caixa-instrucao-biportal-ube/endoscopios-unilateral-biportal-storz-ube/01.jpg');
+  fixed = fixed.replace('/craniotomo-drill-eletrico/01.jpg', '/craniotomo-drill-eletrico/craniotomo-drill-eletrico/01.jpg');
   // Corrigir typo no nome da pasta (clloward → cloward)
   fixed = fixed.replace('/pinca-clloward-', '/pinca-cloward-');
   // Corrigir extensão errada (afastador-taylor .png → .jpg)
