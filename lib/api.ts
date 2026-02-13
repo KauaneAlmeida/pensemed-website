@@ -261,6 +261,7 @@ const TABELAS_CME = [
   'caixa_endoline_interlaminar',
   'caixa_instrucao_biportal_ube',
   'craniotomo_drill_eletrico',
+  'sistema_hibrido_easycore_hip',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -288,6 +289,7 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'caixa_endoline_interlaminar': 'caixa_endoline_interlaminar_imagens',
   'caixa_instrucao_biportal_ube': 'caixa_instrucao_biportal_ube_imagens',
   'craniotomo_drill_eletrico': 'craniotomo_drill_eletrico_imagens',
+  'sistema_hibrido_easycore_hip': 'sistema_hibrido_easycore_hip_imagens',
   // Equipamentos médicos (nomes EXATOS das tabelas no Supabase)
   'arthrocare quantum 2 rf + pedal': 'arthrocare_quantum_2_rf_pedal_imagens',
   'b. braun stimuplex hns12': 'b_braun_stimuplex_hns12_imagens',
@@ -298,7 +300,10 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'gerador rf  surgimax plus + pedal': 'gerador_rf_surgimax_plus_pedal_imagens',
   'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
   'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
+  'torniquete_eletronico': 'torniquete_eletronico_imagens',
+  'bisturi_eletronico_wavetronic': 'bisturi_eletronico_wavetronic_imagens',
   'equipamentos_medicos': 'equipamentos_medicos_imagens',
+  'kit_cirurgico_easycore_hip': 'kit_cirurgico_easycore_hip_imagens',
 };
 
 /**
@@ -1004,6 +1009,8 @@ const TABELAS_EQUIPAMENTOS = [
   'gerador rf  surgimax plus + pedal',
   'laser lombar delight',
   'stryker 5400-50 core console + pedal',
+  'torniquete_eletronico',
+  'bisturi_eletronico_wavetronic',
   'equipamentos_medicos',
 ];
 
@@ -1796,6 +1803,47 @@ export async function getTodosProdutosCatalogo(
       console.error(`[getTodosProdutosCatalogo] Erro em tabela OPME:`, err);
     }
 
+    // Buscar produtos OPME de tabelas adicionais
+    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip'];
+    for (const tabelaOPME of TABELAS_OPME_EXTRAS) {
+      try {
+        const { data, error } = await supabase.from(tabelaOPME).select('*').order('nome', { ascending: true });
+        if (error || !data || data.length === 0) continue;
+
+        const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[tabelaOPME];
+        let opmeExtraComImagem: Set<string | number> = new Set();
+        if (tabelaImagens) {
+          opmeExtraComImagem = await getProdutosComImagem(tabelaImagens);
+        }
+
+        const caixaNome = tabelaToNomeExibicao(tabelaOPME);
+        const caixaSlugAtual = tabelaToSlug(tabelaOPME);
+
+        data.forEach((item: any, index: number) => {
+          const produtoId = item.id || (index + 1);
+          const temImagemNaTabela = opmeExtraComImagem.has(produtoId);
+          todosProdutos.push({
+            id: `opme-${tabelaOPME}-${produtoId}`,
+            nome: item.nome || caixaNome,
+            codigo: item.codigo || null,
+            descricao: item.descricao || null,
+            imagem_url: item.imagem_url || null,
+            categoria_principal: 'OPME',
+            caixa_tabela: tabelaOPME,
+            caixa_nome: caixaNome,
+            caixa_slug: caixaSlugAtual,
+            temImagemNaTabela,
+          });
+        });
+
+        const countOPME = contagemCategorias.get('OPME') || 0;
+        contagemCategorias.set('OPME', countOPME + data.length);
+        console.log(`[getTodosProdutosCatalogo] Tabela OPME extra "${tabelaOPME}": ${data.length} itens`);
+      } catch (err) {
+        console.error(`[getTodosProdutosCatalogo] Erro OPME extra "${tabelaOPME}":`, err);
+      }
+    }
+
     console.log(`[getTodosProdutosCatalogo] Total bruto: ${todosProdutos.length} produtos`);
 
     // Remover duplicados
@@ -1942,8 +1990,8 @@ export async function getTodosProdutosCatalogo(
           return;
         }
 
-        // Para OPME, buscar direto da tabela de imagens
-        if (produto.categoria_principal === 'OPME') {
+        // Para OPME da tabela principal, buscar direto
+        if (produto.categoria_principal === 'OPME' && produto.caixa_tabela === 'produtos_opme') {
           const { data: opmeImgs, error: opmeErr } = await supabase
             .from('produtos_opme_imagens')
             .select('url, ordem')
@@ -3075,15 +3123,55 @@ export async function getProdutosOPME(options: {
     // Filtrar produtos ocultos
     const produtosFiltrados = (data || []).filter((p: ProdutoOPME) => !produtoOPMEDeveSerOculto(p.id));
 
+    // Adicionar produtos de tabelas OPME extras
+    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip'];
+    for (const tabelaExtra of TABELAS_OPME_EXTRAS) {
+      try {
+        const { data: extraData, error: extraError } = await supabase
+          .from(tabelaExtra)
+          .select('*')
+          .order('nome', { ascending: true });
+        if (!extraError && extraData && extraData.length > 0) {
+          extraData.forEach((item: any, index: number) => {
+            // Filtrar por busca se necessário
+            if (busca) {
+              const buscaLower = busca.toLowerCase();
+              const match = (item.nome || '').toLowerCase().includes(buscaLower) ||
+                            (item.descricao || '').toLowerCase().includes(buscaLower);
+              if (!match) return;
+            }
+            // Usar ID alto para evitar colisão com produtos_opme
+            const idUnico = 90000 + TABELAS_OPME_EXTRAS.indexOf(tabelaExtra) * 100 + (item.id || (index + 1));
+            produtosFiltrados.push({
+              id: idUnico,
+              nome: item.nome || tabelaToNomeExibicao(tabelaExtra),
+              categoria: item.categoria || 'OPME',
+              descricao: item.descricao || null,
+              imagem_url: item.imagem_url || null,
+              _tabelaOrigem: tabelaExtra,
+              _idOriginal: item.id || (index + 1),
+            } as any);
+          });
+          console.log(`[getProdutosOPME] Tabela OPME extra "${tabelaExtra}": ${extraData.length} itens`);
+        }
+      } catch (err) {
+        console.error(`[getProdutosOPME] Erro tabela OPME extra "${tabelaExtra}":`, err);
+      }
+    }
+
     // Ajustar contagem total (subtrair produtos ocultos)
-    const produtosOcultosCount = (data || []).length - produtosFiltrados.length;
-    const total = Math.max(0, (count || 0) - produtosOcultosCount);
+    const produtosOcultosCount = (data || []).length - ((data || []).filter((p: ProdutoOPME) => !produtoOPMEDeveSerOculto(p.id)).length);
+    const total = produtosFiltrados.length;
     const totalPaginas = Math.ceil(total / porPagina);
 
     console.log(`[getProdutosOPME] Encontrados ${produtosFiltrados.length} produtos de ${total} total (${produtosOcultosCount} ocultos)`);
 
+    // Aplicar paginação após incluir extras
+    const from2 = (pagina - 1) * porPagina;
+    const produtosPaginados = produtosFiltrados.slice(from2, from2 + porPagina);
+
     return {
-      produtos: produtosFiltrados,
+      produtos: produtosPaginados,
       total,
       pagina,
       porPagina,

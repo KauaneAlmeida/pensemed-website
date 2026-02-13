@@ -292,6 +292,10 @@ export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'instrumental de descompressão TOM SHIELD': 'Instrumental de Descompressão TOM SHIELD',
   'instrumental cabo de fibra óptica compatível stryker': 'Instrumental Cabo de Fibra Óptica Compatível Stryker',
   'caixa apoio bucomaxilo': 'Caixa Apoio Bucomaxilo',
+  'torniquete_eletronico': 'Torniquete Eletrônico',
+  'bisturi_eletronico_wavetronic': 'Bisturi Eletrônico Wavetronic',
+  'sistema_hibrido_easycore_hip': 'Sistema Híbrido EasyCore HIP',
+  'kit_cirurgico_easycore_hip': 'Kit Cirúrgico EasyCore HIP',
 };
 
 /**

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProdutosOPME, getCategoriasOPME } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
+import { getProductImagesServer } from '@/lib/productImagesServer';
 
 // Dinâmico porque usa searchParams, mas com cache nos headers
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,28 @@ export async function GET(request: NextRequest) {
           }
         } catch (err) {
           console.error('[API /opme] Erro ao pré-carregar imagens:', err);
+        }
+      }
+
+      // Pré-carregar imagens de tabelas OPME extras (kit_cirurgico_easycore_hip, etc.)
+      const produtosExtras = resultado.produtos.filter((p: any) => p._tabelaOrigem && !(p as any).imagem_principal);
+      for (const produto of produtosExtras) {
+        // Se já tem imagem_url, usar como imagem_principal
+        if (produto.imagem_url) {
+          (produto as any).imagem_principal = produto.imagem_url;
+          continue;
+        }
+        try {
+          const idOriginal = (produto as any)._idOriginal || produto.id;
+          const { data: imgData } = await getProductImagesServer(idOriginal, (produto as any)._tabelaOrigem, produto.nome);
+          if (imgData && imgData.length > 0) {
+            const principal = imgData.find(img => img.principal) || imgData[0];
+            if (principal?.url) {
+              (produto as any).imagem_principal = principal.url;
+            }
+          }
+        } catch (err) {
+          console.error(`[API /opme] Erro imagem extra "${produto.nome}":`, err);
         }
       }
     }
