@@ -246,7 +246,7 @@ const TABELAS_CME = [
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
-  'caixa endoscopia coluna',
+  // 'caixa endoscopia coluna', // Oculto: instrumentos movidos para caixa_pincas_estenose
   // 'caixa baioneta mis', // Oculto temporariamente
   'caixa intrumentacao cirurgica cranio',
   'caixa micro tesouras',
@@ -262,6 +262,16 @@ const TABELAS_CME = [
   'caixa_instrucao_biportal_ube',
   'craniotomo_drill_eletrico',
   'sistema_hibrido_easycore_hip',
+  'caixa-pincas-estenose',
+  'kit-eletrodos-radiofrequencia',
+  'kit-instrumental-extracao-parafusos',
+  'conjunto-formao-cirurgico-ortopedia',
+  'caixa-pincas-artroscopia',
+  'alicate-bernadao-45cm-steiman',
+  'perfurador-serra-stryker-system-7-bateria',
+  'caixa-artroscopia-pe-tornozelo',
+  'passador-fio-kirschner-stryker-system-7',
+  'caixa-instrumentais-artroscopia-joelho-lca-lcp',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -304,7 +314,31 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'bisturi_eletronico_wavetronic': 'bisturi_eletronico_wavetronic_imagens',
   'equipamentos_medicos': 'equipamentos_medicos_imagens',
   'kit_cirurgico_easycore_hip': 'kit_cirurgico_easycore_hip_imagens',
+  'caixa-pincas-estenose': 'caixa_pincas_estenose_imagens',
+  'kit-eletrodos-radiofrequencia': 'kit_eletrodos_radiofrequencia_imagens',
+  'kit-instrumental-extracao-parafusos': 'kit_instrumental_extracao_parafusos_imagens',
+  'conjunto-formao-cirurgico-ortopedia': 'conjunto_formao_cirurgico_ortopedia_imagens',
+  'caixa-pincas-artroscopia': 'caixa_pincas_artroscopia_imagens',
+  'alicate-bernadao-45cm-steiman': 'alicate_bernadao_45cm_steiman_imagens',
+  'perfurador-serra-stryker-system-7-bateria': 'perfurador_serra_stryker_system_7_bateria_imagens',
+  'caixa-artroscopia-pe-tornozelo': 'caixa_artroscopia_pe_tornozelo_imagens',
+  'passador-fio-kirschner-stryker-system-7': 'passador_fio_kirschner_stryker_system_7_imagens',
+  'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'caixa_instrumentais_artroscopia_joelho_lca_lcp_imagens',
+  'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
 };
+
+/**
+ * Redirecionamento de tabelas CME: quando uma tabela deve exibir os instrumentos de outra.
+ * Ex: "Caixa de Pinças para Estenose" exibe os instrumentos da "Caixa Endoscopia Coluna"
+ */
+const TABELA_REDIRECT_CME: Record<string, string> = {
+  'caixa-pincas-estenose': 'caixa endoscopia coluna',
+};
+
+/** Resolve o redirect se existir, senão retorna o nome original */
+export function resolverRedirectTabela(nomeTabela: string): string {
+  return TABELA_REDIRECT_CME[nomeTabela] || nomeTabela;
+}
 
 /**
  * Tabelas de imagens que usam produto_nome em vez de produto_id
@@ -339,10 +373,11 @@ const TABELAS_ESTRUTURA_ESPECIAL_API: Record<string, {
  * @returns Número de itens únicos
  */
 async function contarItensUnicos(nomeTabela: string): Promise<number> {
+  const tabelaReal = resolverRedirectTabela(nomeTabela);
   try {
     // Buscar todos os dados da tabela (select * para garantir que pegamos todas as colunas)
     const { data, error } = await supabase
-      .from(nomeTabela)
+      .from(tabelaReal)
       .select('*');
 
     if (error || !data || data.length === 0) {
@@ -358,8 +393,8 @@ async function contarItensUnicos(nomeTabela: string): Promise<number> {
       // Tentar pegar o nome de diferentes campos possíveis
       const nome = item.nome || item.name || item.titulo || item.title;
       if (nome) {
-        // Excluir produtos ocultos da contagem
-        if (produtoDeveSerOcultoDaTabela(nome, nomeTabela)) return;
+        // Excluir produtos ocultos da contagem (usar tabelaReal para redirect)
+        if (produtoDeveSerOcultoDaTabela(nome, tabelaReal)) return;
         const nomeNormalizado = nome
           .toLowerCase()
           .trim()
@@ -580,22 +615,23 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
 
   try {
     for (const nomeTabela of TABELAS_CME) {
-      console.log(`[getCaixasCME] Processando tabela: "${nomeTabela}"`);
+      const tabelaReal = resolverRedirectTabela(nomeTabela);
+      console.log(`[getCaixasCME] Processando tabela: "${nomeTabela}"${tabelaReal !== nomeTabela ? ` (redirect → "${tabelaReal}")` : ''}`);
 
       try {
         // Primeiro verificar se a tabela existe e tem dados
         const { data: sampleData, error: sampleError } = await supabase
-          .from(nomeTabela)
+          .from(tabelaReal)
           .select('*')
           .limit(1);
 
         if (sampleError) {
-          console.error(`[getCaixasCME] Erro ao acessar tabela "${nomeTabela}":`, sampleError.message);
+          console.error(`[getCaixasCME] Erro ao acessar tabela "${tabelaReal}":`, sampleError.message);
           continue;
         }
 
         if (!sampleData || sampleData.length === 0) {
-          console.warn(`[getCaixasCME] Tabela "${nomeTabela}" está vazia, pulando...`);
+          console.warn(`[getCaixasCME] Tabela "${tabelaReal}" está vazia, pulando...`);
           continue;
         }
 
@@ -604,7 +640,7 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
         console.log(`[getCaixasCME] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos`);
 
         // Buscar imagem da tabela de imagens (1:N) - usa a segunda imagem
-        let imagemUrl = await buscarImagemDaCaixa(nomeTabela);
+        let imagemUrl = await buscarImagemDaCaixa(tabelaReal);
 
         // Fallback: usar imagem do primeiro produto se não tiver na tabela de imagens
         if (!imagemUrl) {
@@ -663,14 +699,19 @@ export async function getInstrumentosDaTabela(
   pagina: number = 1,
   porPagina: number = 20
 ): Promise<InstrumentosCMEPaginados> {
-  console.log(`[getInstrumentosDaTabela] Iniciando busca em "${nomeTabela}"`);
+  // Resolver redirect: se a tabela redireciona para outra, buscar da tabela destino
+  const tabelaReal = resolverRedirectTabela(nomeTabela);
+  if (tabelaReal !== nomeTabela) {
+    console.log(`[getInstrumentosDaTabela] Redirect: "${nomeTabela}" → "${tabelaReal}"`);
+  }
+  console.log(`[getInstrumentosDaTabela] Iniciando busca em "${tabelaReal}"`);
   console.log(`[getInstrumentosDaTabela] Página: ${pagina}, Por página: ${porPagina}`);
 
   try {
     // Buscar TODOS os dados primeiro para remover duplicados corretamente
     console.log(`[getInstrumentosDaTabela] Buscando todos os registros...`);
     const { data, error } = await supabase
-      .from(nomeTabela)
+      .from(tabelaReal)
       .select('*')
       .order('nome', { ascending: true });
 
@@ -723,12 +764,12 @@ export async function getInstrumentosDaTabela(
 
     // FILTRAR produtos ocultos para esta tabela específica
     const instrumentosFiltrados = instrumentosUnicos.filter(
-      (item: any) => !produtoDeveSerOcultoDaTabela(item.nome, nomeTabela)
+      (item: any) => !produtoDeveSerOcultoDaTabela(item.nome, tabelaReal)
     );
     console.log(`[getInstrumentosDaTabela] Após filtrar ocultos: ${instrumentosFiltrados.length}`);
 
     // ORDENAR por imagem: produtos com imagem primeiro, depois alfabético
-    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[tabelaReal];
     let instrumentosOrdenados = instrumentosFiltrados;
 
     if (tabelaImagens) {
@@ -754,7 +795,7 @@ export async function getInstrumentosDaTabela(
         try {
           const { data: imgData, error: imgError } = await getProductImagesServer(
             instr.id,
-            nomeTabela,
+            tabelaReal,
             instr.nome_original || instr.nome,
             instr.imagem_slug || undefined
           );
@@ -1804,7 +1845,7 @@ export async function getTodosProdutosCatalogo(
     }
 
     // Buscar produtos OPME de tabelas adicionais
-    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip'];
+    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip', 'kit-brocas-diamantadas-biometal'];
     for (const tabelaOPME of TABELAS_OPME_EXTRAS) {
       try {
         const { data, error } = await supabase.from(tabelaOPME).select('*').order('nome', { ascending: true });
@@ -3124,7 +3165,7 @@ export async function getProdutosOPME(options: {
     const produtosFiltrados = (data || []).filter((p: ProdutoOPME) => !produtoOPMEDeveSerOculto(p.id));
 
     // Adicionar produtos de tabelas OPME extras
-    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip'];
+    const TABELAS_OPME_EXTRAS = ['kit_cirurgico_easycore_hip', 'kit-brocas-diamantadas-biometal'];
     for (const tabelaExtra of TABELAS_OPME_EXTRAS) {
       try {
         const { data: extraData, error: extraError } = await supabase

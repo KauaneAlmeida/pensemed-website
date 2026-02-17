@@ -296,6 +296,17 @@ export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'bisturi_eletronico_wavetronic': 'Bisturi Eletrônico Wavetronic',
   'sistema_hibrido_easycore_hip': 'Sistema Híbrido EasyCore HIP',
   'kit_cirurgico_easycore_hip': 'Kit Cirúrgico EasyCore HIP',
+  'caixa-pincas-estenose': 'Caixa de Pinças para Estenose',
+  'kit-eletrodos-radiofrequencia': 'Kit de Eletrodos para Radiofrequência',
+  'kit-instrumental-extracao-parafusos': 'Kit Instrumental para Extração de Parafusos',
+  'conjunto-formao-cirurgico-ortopedia': 'Conjunto Formão Cirúrgico Ortopedia',
+  'caixa-pincas-artroscopia': 'Caixa de Pinças para Artroscopia',
+  'alicate-bernadao-45cm-steiman': 'Alicate Bernadão 45cm Steiman',
+  'perfurador-serra-stryker-system-7-bateria': 'Perfurador Serra Stryker System 7 Bateria',
+  'caixa-artroscopia-pe-tornozelo': 'Caixa Artroscopia Pé e Tornozelo',
+  'passador-fio-kirschner-stryker-system-7': 'Passador Fio Kirschner Stryker System 7',
+  'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'Caixa Instrumentais Artroscopia Joelho LCA/LCP',
+  'kit-brocas-diamantadas-biometal': 'Kit Brocas Diamantadas Biometal',
 };
 
 /**

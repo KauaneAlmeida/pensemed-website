@@ -559,6 +559,17 @@ function getImageTableName(tableName: string, productId?: number): string {
     'laser lombar delight': 'laser_para_hernia_de_disco_lombar_delight_imagens',
     'stryker 5400-50 core console + pedal': 'stryker_core_console_pedal_imagens',
     'equipamentos_medicos': 'equipamentos_medicos_imagens',
+    'caixa-pincas-estenose': 'caixa_pincas_estenose_imagens',
+    'kit-eletrodos-radiofrequencia': 'kit_eletrodos_radiofrequencia_imagens',
+    'kit-instrumental-extracao-parafusos': 'kit_instrumental_extracao_parafusos_imagens',
+    'conjunto-formao-cirurgico-ortopedia': 'conjunto_formao_cirurgico_ortopedia_imagens',
+    'caixa-pincas-artroscopia': 'caixa_pincas_artroscopia_imagens',
+    'alicate-bernadao-45cm-steiman': 'alicate_bernadao_45cm_steiman_imagens',
+    'perfurador-serra-stryker-system-7-bateria': 'perfurador_serra_stryker_system_7_bateria_imagens',
+    'caixa-artroscopia-pe-tornozelo': 'caixa_artroscopia_pe_tornozelo_imagens',
+    'passador-fio-kirschner-stryker-system-7': 'passador_fio_kirschner_stryker_system_7_imagens',
+    'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'caixa_instrumentais_artroscopia_joelho_lca_lcp_imagens',
+    'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
     'produtos_opme': 'produtos_opme_imagens',
   };
 
