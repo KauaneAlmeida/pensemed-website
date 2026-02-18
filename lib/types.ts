@@ -307,6 +307,8 @@ export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'passador-fio-kirschner-stryker-system-7': 'Passador Fio Kirschner Stryker System 7',
   'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'Caixa Instrumentais Artroscopia Joelho LCA/LCP',
   'kit-brocas-diamantadas-biometal': 'Kit Brocas Diamantadas Biometal',
+  'caixa_artroscopia_cotovelo': 'Caixa Artroscopia Cotovelo',
+  'caixa_artroscopia_ombro': 'Caixa Artroscopia Ombro',
 };
 
 /**

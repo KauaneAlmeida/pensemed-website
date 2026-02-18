@@ -272,6 +272,8 @@ const TABELAS_CME = [
   'caixa-artroscopia-pe-tornozelo',
   'passador-fio-kirschner-stryker-system-7',
   'caixa-instrumentais-artroscopia-joelho-lca-lcp',
+  'caixa_artroscopia_cotovelo',
+  'caixa_artroscopia_ombro',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -325,6 +327,8 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'passador-fio-kirschner-stryker-system-7': 'passador_fio_kirschner_stryker_system_7_imagens',
   'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'caixa_instrumentais_artroscopia_joelho_lca_lcp_imagens',
   'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
+  'caixa_artroscopia_cotovelo': 'caixa_artroscopia_cotovelo_imagens',
+  'caixa_artroscopia_ombro': 'caixa_artroscopia_ombro_imagens',
 };
 
 /**

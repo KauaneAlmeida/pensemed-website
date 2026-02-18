@@ -570,6 +570,8 @@ function getImageTableName(tableName: string, productId?: number): string {
     'passador-fio-kirschner-stryker-system-7': 'passador_fio_kirschner_stryker_system_7_imagens',
     'caixa-instrumentais-artroscopia-joelho-lca-lcp': 'caixa_instrumentais_artroscopia_joelho_lca_lcp_imagens',
     'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
+    'caixa_artroscopia_cotovelo': 'caixa_artroscopia_cotovelo_imagens',
+    'caixa_artroscopia_ombro': 'caixa_artroscopia_ombro_imagens',
     'produtos_opme': 'produtos_opme_imagens',
   };
 
