@@ -246,7 +246,7 @@ const TABELAS_CME = [
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
-  // 'caixa endoscopia coluna', // Oculto: instrumentos exibidos via caixa-pincas-estenose
+  'caixa endoscopia coluna',
   // 'caixa baioneta mis', // Oculto temporariamente
   'caixa intrumentacao cirurgica cranio',
   'caixa micro tesouras',
@@ -341,8 +341,13 @@ const TABELA_REDIRECT_CME: Record<string, string> = {
 
 /**
  * Tabelas CME expandidas: cada item da tabela aparece como card individual na página CME.
+ * Se o valor for um array de IDs, apenas esses itens serão expandidos como cards individuais.
+ * Se o valor for true, todos os itens da tabela são expandidos.
  */
-const TABELAS_CME_EXPANDIDAS = ['equipamentos_cme'];
+const TABELAS_CME_EXPANDIDAS: Record<string, true | number[]> = {
+  'equipamentos_cme': true,
+  'caixa endoscopia coluna': [25, 50, 51], // Endoscópio Transforaminal, Interlaminar, Estenose
+};
 
 /** Resolve o redirect se existir, senão retorna o nome original.
  *  Também resolve padrão expandido: "tabela__id" → "tabela" */
@@ -657,10 +662,16 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
         }
 
         // Tabela expandida: cada item aparece como card individual
-        if (TABELAS_CME_EXPANDIDAS.includes(nomeTabela)) {
+        const expandConfig = TABELAS_CME_EXPANDIDAS[nomeTabela];
+        if (expandConfig) {
           console.log(`[getCaixasCME] Tabela "${nomeTabela}" é expandida, criando cards individuais...`);
           const { data: todosItens } = await supabase.from(tabelaReal).select('*').order('nome', { ascending: true });
           if (!todosItens || todosItens.length === 0) continue;
+
+          // Filtrar por IDs específicos se configurado
+          const itensParaExpandir = expandConfig === true
+            ? todosItens
+            : todosItens.filter(item => expandConfig.includes(item.id));
 
           const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
           let imagensPorProduto: Record<number, string> = {};
@@ -675,7 +686,7 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
             }
           }
 
-          for (const item of todosItens) {
+          for (const item of itensParaExpandir) {
             const itemId = item.id;
             if (!itemId) continue;
             const imgUrl = imagensPorProduto[itemId] || item.imagem_url || item.imagem || null;
@@ -688,7 +699,7 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
             });
           }
 
-          console.log(`[getCaixasCME] Expandida "${nomeTabela}": ${todosItens.length} cards individuais`);
+          console.log(`[getCaixasCME] Expandida "${nomeTabela}": ${itensParaExpandir.length} cards individuais`);
           continue;
         }
 
