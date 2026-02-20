@@ -182,6 +182,7 @@ export function getImageTableName(tableName: string, productId?: number): string
     'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
     'caixa_artroscopia_cotovelo': 'caixa_artroscopia_cotovelo_imagens',
     'caixa_artroscopia_ombro': 'caixa_artroscopia_ombro_imagens',
+    'equipamentos_cme': 'equipamentos_cme_imagens',
     'produtos_opme': 'produtos_opme_imagens',
   };
 

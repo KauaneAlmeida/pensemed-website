@@ -246,7 +246,7 @@ const TABELAS_CME = [
   'caixa de apoio alif',
   'caixa de apoio cervical',
   'caixa de apoio lombar',
-  // 'caixa endoscopia coluna', // Oculto: instrumentos movidos para caixa_pincas_estenose
+  // 'caixa endoscopia coluna', // Oculto: instrumentos exibidos via caixa-pincas-estenose
   // 'caixa baioneta mis', // Oculto temporariamente
   'caixa intrumentacao cirurgica cranio',
   'caixa micro tesouras',
@@ -274,6 +274,7 @@ const TABELAS_CME = [
   'caixa-instrumentais-artroscopia-joelho-lca-lcp',
   'caixa_artroscopia_cotovelo',
   'caixa_artroscopia_ombro',
+  'equipamentos_cme',
   // Adicione mais tabelas conforme necessário
 ];
 
@@ -329,18 +330,28 @@ const MAPEAMENTO_TABELAS_IMAGENS: Record<string, string> = {
   'kit-brocas-diamantadas-biometal': 'kit_brocas_diamantadas_biometal_imagens',
   'caixa_artroscopia_cotovelo': 'caixa_artroscopia_cotovelo_imagens',
   'caixa_artroscopia_ombro': 'caixa_artroscopia_ombro_imagens',
+  'equipamentos_cme': 'equipamentos_cme_imagens',
 };
 
 /**
  * Redirecionamento de tabelas CME: quando uma tabela deve exibir os instrumentos de outra.
- * Ex: "Caixa de Pinças para Estenose" exibe os instrumentos da "Caixa Endoscopia Coluna"
  */
 const TABELA_REDIRECT_CME: Record<string, string> = {
-  'caixa-pincas-estenose': 'caixa endoscopia coluna',
 };
 
-/** Resolve o redirect se existir, senão retorna o nome original */
+/**
+ * Tabelas CME expandidas: cada item da tabela aparece como card individual na página CME.
+ */
+const TABELAS_CME_EXPANDIDAS = ['equipamentos_cme'];
+
+/** Resolve o redirect se existir, senão retorna o nome original.
+ *  Também resolve padrão expandido: "tabela__id" → "tabela" */
 export function resolverRedirectTabela(nomeTabela: string): string {
+  // Resolver padrão expandido primeiro
+  const matchExpandido = nomeTabela.match(/^(.+)__(\d+)$/);
+  if (matchExpandido) {
+    return matchExpandido[1];
+  }
   return TABELA_REDIRECT_CME[nomeTabela] || nomeTabela;
 }
 
@@ -440,6 +451,12 @@ const PRODUTO_NOME_CARD_PRINCIPAL: Record<string, string> = {
 // Renomear produtos no frontend (sem alterar o Supabase)
 const RENOMEAR_PRODUTO: Record<string, string> = {
   'AFASTADOR DOYEN 45 X 120MM': 'CAIXA DE APOIO ALIF',
+};
+
+// Sobrescrever descrição de produtos no frontend (sem alterar o Supabase)
+// Chave: nome exato do produto, Valor: descrição customizada
+const DESCRICAO_CUSTOMIZADA: Record<string, string> = {
+  'Afastador Tubular Vertebral Crystal Lux Safira': 'O Crystal Lux é um kit de cânulas dilatadoras desenvolvido pela Pense Med para procedimentos neurocirúrgicos minimamente invasivos que exigem máxima precisão e segurança.\nProjetado para atender às exigências rigorosas dos neurocirurgiões, o sistema oferece acesso controlado a áreas de alta complexidade anatômica, contribuindo para menor trauma tecidual e melhor visualização do campo cirúrgico.\nSeu design foi pensado para proporcionar dilatação progressiva e estável, permitindo ao cirurgião trabalhar com maior controle em abordagens delicadas, como em cirurgias de coluna e crânio, onde a preservação de estruturas neurais é fundamental.\nO conjunto de cânulas apresenta superfícies cuidadosamente acabadas e geometrias que favorecem a introdução suave, reduzindo o risco de lesões e facilitando o manuseio intraoperatório.\nIdeal para centros de referência em neurocirurgia, o Crystal Lux se posiciona como uma solução de alta performance para desafios anatômicos complexos, alinhando inovação, precisão e confiabilidade. Indicado para profissionais que buscam um kit completo de dilatação com padrão elevado de qualidade, o produto reforça o compromisso da Pense Med em oferecer tecnologias avançadas para resultados cirúrgicos excepcionais.',
 };
 
 async function buscarImagemDaCaixa(nomeTabela: string): Promise<string | null> {
@@ -639,6 +656,42 @@ export async function getCaixasCME(): Promise<CaixaCME[]> {
           continue;
         }
 
+        // Tabela expandida: cada item aparece como card individual
+        if (TABELAS_CME_EXPANDIDAS.includes(nomeTabela)) {
+          console.log(`[getCaixasCME] Tabela "${nomeTabela}" é expandida, criando cards individuais...`);
+          const { data: todosItens } = await supabase.from(tabelaReal).select('*').order('nome', { ascending: true });
+          if (!todosItens || todosItens.length === 0) continue;
+
+          const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[nomeTabela];
+          let imagensPorProduto: Record<number, string> = {};
+          if (tabelaImagens) {
+            const { data: imgs } = await supabase.from(tabelaImagens).select('produto_id, url, principal');
+            if (imgs) {
+              for (const img of imgs) {
+                if (img.produto_id && img.url && !imagensPorProduto[img.produto_id]) {
+                  imagensPorProduto[img.produto_id] = img.url;
+                }
+              }
+            }
+          }
+
+          for (const item of todosItens) {
+            const itemId = item.id;
+            if (!itemId) continue;
+            const imgUrl = imagensPorProduto[itemId] || item.imagem_url || item.imagem || null;
+            caixas.push({
+              nome_tabela: `${nomeTabela}__${itemId}`,
+              nome_exibicao: item.nome || tabelaToNomeExibicao(nomeTabela),
+              total_instrumentos: 1,
+              imagem_url: imgUrl,
+              slug: tabelaToSlug(`${nomeTabela}__${itemId}`),
+            });
+          }
+
+          console.log(`[getCaixasCME] Expandida "${nomeTabela}": ${todosItens.length} cards individuais`);
+          continue;
+        }
+
         // Contar itens ÚNICOS (sem duplicados)
         const totalUnicos = await contarItensUnicos(nomeTabela);
         console.log(`[getCaixasCME] Tabela "${nomeTabela}" tem ${totalUnicos} itens únicos`);
@@ -703,6 +756,44 @@ export async function getInstrumentosDaTabela(
   pagina: number = 1,
   porPagina: number = 20
 ): Promise<InstrumentosCMEPaginados> {
+  // Detectar padrão expandido: "tabela__id" → buscar apenas o item específico
+  const matchExpandido = nomeTabela.match(/^(.+)__(\d+)$/);
+  if (matchExpandido) {
+    const tabelaBase = matchExpandido[1];
+    const itemId = parseInt(matchExpandido[2]);
+    console.log(`[getInstrumentosDaTabela] Card expandido: tabela="${tabelaBase}" id=${itemId}`);
+
+    const { data, error } = await supabase.from(tabelaBase).select('*').eq('id', itemId);
+    if (error || !data || data.length === 0) {
+      return { instrumentos: [], total: 0, pagina: 1, porPagina, totalPaginas: 0 };
+    }
+
+    const item = data[0];
+    const tabelaImagens = MAPEAMENTO_TABELAS_IMAGENS[tabelaBase];
+    let imagemUrl = item.imagem_url || item.imagem || null;
+
+    // Buscar imagem da tabela de imagens
+    if (tabelaImagens && !imagemUrl) {
+      const { data: imgData } = await getProductImagesServer(itemId, tabelaBase, item.nome);
+      if (imgData && imgData.length > 0) {
+        const principal = imgData.find((img: any) => img.principal) || imgData[0];
+        if (principal?.url) imagemUrl = principal.url;
+      }
+    }
+
+    const instrumento = {
+      id: item.id,
+      nome: item.nome || '',
+      codigo: String(item.id),
+      descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
+      categoria: item.categoria || null,
+      imagem_url: imagemUrl,
+      imagem: imagemUrl,
+    };
+
+    return { instrumentos: [instrumento], total: 1, pagina: 1, porPagina, totalPaginas: 1 };
+  }
+
   // Resolver redirect: se a tabela redireciona para outra, buscar da tabela destino
   const tabelaReal = resolverRedirectTabela(nomeTabela);
   if (tabelaReal !== nomeTabela) {
@@ -1240,7 +1331,7 @@ export async function getEquipamentosDaTabela(
         nome: item.nome,
         categoria: item.categoria,
         codigo: item.codigo || null,
-        descricao: item.descricao || null,
+        descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
         imagem_url: imagemUrl,
       };
     }) || [];
@@ -1383,7 +1474,7 @@ export async function getEquipamentoPorId(
       nome: data.nome,
       categoria: data.categoria,
       codigo: data.codigo || null,
-      descricao: data.descricao || null,
+      descricao: (data.nome && DESCRICAO_CUSTOMIZADA[data.nome]) || data.descricao || null,
       imagem_url: imagemUrl,
     };
   } catch (error) {
@@ -1542,7 +1633,7 @@ export async function getTodosProdutosCatalogo(
             nome: nomeExibicao,
             nome_original: nomeOriginal,
             codigo,
-            descricao: item.descricao || null,
+            descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
             imagem_url: imagemUrl,
             categoria_principal: 'Instrumentação Cirúrgica CME',
             caixa_tabela: nomeTabela,
@@ -1620,7 +1711,7 @@ export async function getTodosProdutosCatalogo(
               id: `equip-${nomeTabela}-${itemId}`,
               nome: item.nome,
               codigo: String(itemId),
-              descricao: item.descricao || null,
+              descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
               imagem_url: imagemUrl,
               categoria_principal: 'Equipamentos Médicos',
               caixa_tabela: nomeTabela,
@@ -1748,7 +1839,7 @@ export async function getTodosProdutosCatalogo(
             id: `equip-${nomeTabela}-${produtoIdEquip}`,
             nome: item.nome,
             codigo: idEquipamento,
-            descricao: item.descricao || null,
+            descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
             imagem_url: imagemUrl,
             categoria_principal: 'Equipamentos Médicos',
             caixa_tabela: nomeTabela,
@@ -1810,7 +1901,7 @@ export async function getTodosProdutosCatalogo(
             id: `opme-${produtoIdOPME}`,
             nome: item.nome || 'Produto OPME',
             codigo: item.registro_anvisa || null,
-            descricao: item.descricao || item.aplicacao || null,
+            descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || item.aplicacao || null,
             imagem_url: item.imagem_url || null,
             categoria_principal: 'OPME',
             caixa_tabela: 'produtos_opme',
@@ -1871,7 +1962,7 @@ export async function getTodosProdutosCatalogo(
             id: `opme-${tabelaOPME}-${produtoId}`,
             nome: item.nome || caixaNome,
             codigo: item.codigo || null,
-            descricao: item.descricao || null,
+            descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
             imagem_url: item.imagem_url || null,
             categoria_principal: 'OPME',
             caixa_tabela: tabelaOPME,
@@ -2571,7 +2662,7 @@ function buscarVariacoesEspeciais(
               id: itemId,
               nome: item.nome,
               codigo: item.codigo || null,
-              descricao: item.descricao || null,
+              descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
               imagem_url: imagemUrl,
               variacaoTexto: variacao || 'Original',
               tipoVariacao: 'medida',
@@ -2683,7 +2774,7 @@ export async function getVariacoesInstrumento(
           id: itemId,
           nome: item.nome,
           codigo: item.codigo || null,
-          descricao: item.descricao || null,
+          descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
           imagem_url: imagemUrl,
           variacaoTexto: formatarVariacaoTexto(variacao, tipo),
           tipoVariacao: tipo,
@@ -2841,7 +2932,7 @@ export async function getVariacoesEquipamento(
           id: itemId,
           nome: item.nome,
           codigo: item.codigo || null,
-          descricao: item.descricao || null,
+          descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
           imagem_url: imagemUrl,
           variacaoTexto: formatarVariacaoTexto(variacao, tipo),
           tipoVariacao: tipo,
@@ -3191,7 +3282,7 @@ export async function getProdutosOPME(options: {
               id: idUnico,
               nome: item.nome || tabelaToNomeExibicao(tabelaExtra),
               categoria: item.categoria || 'OPME',
-              descricao: item.descricao || null,
+              descricao: (item.nome && DESCRICAO_CUSTOMIZADA[item.nome]) || item.descricao || null,
               imagem_url: item.imagem_url || null,
               _tabelaOrigem: tabelaExtra,
               _idOriginal: item.id || (index + 1),

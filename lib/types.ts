@@ -300,7 +300,7 @@ export const NOMES_EXIBICAO_PERSONALIZADOS: Record<string, string> = {
   'kit-eletrodos-radiofrequencia': 'Kit de Eletrodos para Radiofrequência',
   'kit-instrumental-extracao-parafusos': 'Kit Instrumental para Extração de Parafusos',
   'conjunto-formao-cirurgico-ortopedia': 'Conjunto Formão Cirúrgico Ortopedia',
-  'caixa-pincas-artroscopia': 'Caixa de Pinças para Artroscopia',
+  'caixa-pincas-artroscopia': 'Caixa de Pinças para Artroscopia de Joelho',
   'alicate-bernadao-45cm-steiman': 'Alicate Bernadão 45cm Steiman',
   'perfurador-serra-stryker-system-7-bateria': 'Perfurador Serra Stryker System 7 Bateria',
   'caixa-artroscopia-pe-tornozelo': 'Caixa Artroscopia Pé e Tornozelo',
