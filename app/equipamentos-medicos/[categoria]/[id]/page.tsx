@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento, isEquipamentoProdutoUnico } from '@/lib/api';
+import { getEquipamentoPorId, getCategoriasEquipamentos, getProdutosRelacionados, getVariacoesEquipamento, TABELAS_EQUIPAMENTOS, VariacaoInstrumento, isEquipamentoProdutoUnico, DESCRICAO_CUSTOMIZADA } from '@/lib/api';
 import { slugToTabela, codigoValido, enriquecerDescricaoEquipamento, tabelaToNomeExibicao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import { getProductImagesServer, corrigirUrlImagem } from '@/lib/productImagesServer';
@@ -68,7 +68,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
             nome: data.nome,
             categoria: data.categoria || 'Equipamentos Médicos',
             codigo: data.codigo || null,
-            descricao: data.descricao || null,
+            descricao: (data.nome && DESCRICAO_CUSTOMIZADA[data.nome]) || data.descricao || null,
             imagem_url: imagemUrl || data.imagem_url || null,
           },
           nomeTabela: tabelaReal,
@@ -149,7 +149,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
         nome: nomeExibicao,
         categoria: 'Equipamentos Médicos',
         codigo: null,
-        descricao: descricaoCompleta || `${nomeExibicao} - Equipamento médico de alta tecnologia disponível para locação.`,
+        descricao: DESCRICAO_CUSTOMIZADA[nomeExibicao] || descricaoCompleta || `${nomeExibicao} - Equipamento médico de alta tecnologia disponível para locação.`,
         imagem_url: imagemUrl,
       },
       nomeTabela,
@@ -217,7 +217,7 @@ async function buscarEquipamentoComFallback(slug: string, id: number) {
             nome: data.nome,
             categoria: data.categoria,
             codigo: data.codigo || null,
-            descricao: data.descricao || null,
+            descricao: (data.nome && DESCRICAO_CUSTOMIZADA[data.nome]) || data.descricao || null,
             imagem_url: imagemUrl,
           },
           nomeTabela: tabela,

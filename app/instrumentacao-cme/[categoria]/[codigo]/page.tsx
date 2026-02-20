@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getInstrumentoDaTabela, getCaixasCME, getProdutosRelacionados, getVariacoesInstrumento, TABELAS_CME, VariacaoInstrumento } from '@/lib/api';
+import { getInstrumentoDaTabela, getCaixasCME, getProdutosRelacionados, getVariacoesInstrumento, TABELAS_CME, VariacaoInstrumento, DESCRICAO_CUSTOMIZADA } from '@/lib/api';
 import { slugToTabela, codigoValido, enriquecerDescricao } from '@/lib/types';
 import { supabase } from '@/lib/supabaseClient';
 import InstrumentoDetalhes from '@/components/InstrumentoDetalhes';
@@ -131,7 +131,7 @@ async function buscarInstrumentoComFallback(slug: string, codigo: string) {
             nome: data.nome,
             nome_original: data.nome,
             codigo: data.codigo || null,
-            descricao: data.descricao || null,
+            descricao: (data.nome && DESCRICAO_CUSTOMIZADA[data.nome]) || data.descricao || null,
             imagem_url: imagemUrl,
             categoria: tabela,
           },

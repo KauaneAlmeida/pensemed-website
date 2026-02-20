@@ -460,7 +460,7 @@ const RENOMEAR_PRODUTO: Record<string, string> = {
 
 // Sobrescrever descrição de produtos no frontend (sem alterar o Supabase)
 // Chave: nome exato do produto, Valor: descrição customizada
-const DESCRICAO_CUSTOMIZADA: Record<string, string> = {
+export const DESCRICAO_CUSTOMIZADA: Record<string, string> = {
   'Afastador Tubular Vertebral Crystal Lux Safira': 'O Crystal Lux é um kit de cânulas dilatadoras desenvolvido pela Pense Med para procedimentos neurocirúrgicos minimamente invasivos que exigem máxima precisão e segurança.\nProjetado para atender às exigências rigorosas dos neurocirurgiões, o sistema oferece acesso controlado a áreas de alta complexidade anatômica, contribuindo para menor trauma tecidual e melhor visualização do campo cirúrgico.\nSeu design foi pensado para proporcionar dilatação progressiva e estável, permitindo ao cirurgião trabalhar com maior controle em abordagens delicadas, como em cirurgias de coluna e crânio, onde a preservação de estruturas neurais é fundamental.\nO conjunto de cânulas apresenta superfícies cuidadosamente acabadas e geometrias que favorecem a introdução suave, reduzindo o risco de lesões e facilitando o manuseio intraoperatório.\nIdeal para centros de referência em neurocirurgia, o Crystal Lux se posiciona como uma solução de alta performance para desafios anatômicos complexos, alinhando inovação, precisão e confiabilidade. Indicado para profissionais que buscam um kit completo de dilatação com padrão elevado de qualidade, o produto reforça o compromisso da Pense Med em oferecer tecnologias avançadas para resultados cirúrgicos excepcionais.',
 };
 
